@@ -3,7 +3,6 @@ services:
     build: ./backend
     volumes:
       - ./data:/data
-      - ./data/static:/app/static
     ports:
       - "8000:8000"
     environment:

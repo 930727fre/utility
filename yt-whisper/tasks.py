@@ -1,15 +1,15 @@
+import multiprocessing
 import os
 import uuid
 from datetime import datetime, timezone
 
 from celery import Celery
-import whisper
 import yt_dlp
 
 from storage import get_job, upsert_job, read_jobs, write_jobs, ensure_jobs_file
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
-DOWNLOADS_DIR = "/app/downloads"
+DOWNLOADS_DIR = "/app/data/downloads"
 
 app = Celery("tasks", broker=REDIS_URL, backend=REDIS_URL)
 app.conf.task_track_started = True
@@ -20,7 +20,8 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _reset_stale_jobs():
+@app.on_after_configure.connect
+def _reset_stale_jobs(sender, **kwargs):
     ensure_jobs_file()
     jobs = read_jobs()
     changed = False
@@ -34,16 +35,12 @@ def _reset_stale_jobs():
         write_jobs(jobs)
 
 
-_reset_stale_jobs()
-
-
 @app.task(bind=True)
 def process_video(self, job_id: str, url: str):
     job = get_job(job_id)
     if not job or job["status"] == "DELETED":
         return
 
-    os.makedirs(DOWNLOADS_DIR, exist_ok=True)
     base_path = os.path.join(DOWNLOADS_DIR, job_id)
 
     # --- Download ---
@@ -77,18 +74,35 @@ def process_video(self, job_id: str, url: str):
         return
 
     job["title"] = title
-    job["files"]["mp4"] = f"downloads/{job_id}.mp4"
+    job["files"]["mp4"] = f"{job_id}.mp4"
     job["status"] = "TRANSCRIBING"
     job["updated_at"] = _now()
     upsert_job(job)
 
     # --- Transcribe ---
-    try:
-        model = whisper.load_model("medium", device="cuda")
-        result = model.transcribe(base_path + ".mp4", beam_size=5, language=None, verbose=False)
-    except Exception as e:
-        _fail(job_id, str(e))
+    ctx = multiprocessing.get_context("spawn")
+    out_queue = ctx.Queue()
+    proc = ctx.Process(target=_transcribe_worker, args=(base_path + ".mp4", out_queue))
+    proc.start()
+
+    while True:
+        proc.join(timeout=2)
+        if not proc.is_alive():
+            break
+        current = get_job(job_id)
+        if not current or current["status"] == "DELETED":
+            proc.terminate()
+            proc.join()
+            return
+
+    if out_queue.empty():
+        _fail(job_id, "Transcription process exited unexpectedly")
         return
+    status, payload = out_queue.get()
+    if status == "err":
+        _fail(job_id, payload)
+        return
+    result = payload
 
     job = get_job(job_id)
     if not job or job["status"] == "DELETED":
@@ -102,9 +116,22 @@ def process_video(self, job_id: str, url: str):
             f.write(f"{seg['text'].strip()}\n\n")
 
     job["status"] = "SUCCESS"
-    job["files"]["srt"] = f"downloads/{job_id}.srt"
+    job["files"]["srt"] = f"{job_id}.srt"
     job["updated_at"] = _now()
     upsert_job(job)
+
+
+def _transcribe_worker(mp4_path: str, out_queue):
+    import torch
+    import whisper
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"[transcribe] device={device}", flush=True)
+    try:
+        model = whisper.load_model("medium", device=device)
+        result = model.transcribe(mp4_path, beam_size=5, language=None, verbose=False)
+        out_queue.put(("ok", result))
+    except Exception as e:
+        out_queue.put(("err", str(e)))
 
 
 def _fail(job_id: str, error: str):

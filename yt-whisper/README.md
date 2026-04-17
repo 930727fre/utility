@@ -46,9 +46,10 @@ language      = None   # auto detect
 ├── requirements.txt
 ├── static/
 │   └── index.html     # 任務監控儀表板
-├── downloads/         # MP4 與 SRT 檔案（volume 掛載）
-├── jobs.json          # 任務狀態記錄（volume 掛載）
-└── models/            # Whisper 模型快取（volume 掛載）
+└── data/              # 所有資料（git ignored，volume 掛載）
+    ├── jobs.json      # 任務狀態記錄
+    ├── downloads/     # MP4 與 SRT 檔案
+    └── models/        # Whisper 模型快取
 ```
 
 ---
@@ -79,9 +80,8 @@ docker-compose
 
 | 主機路徑 | 容器路徑 | 掛載容器 | 說明 |
 | :--- | :--- | :--- | :--- |
-| `./downloads` | `/app/downloads` | web、worker | MP4 與 SRT 檔案 |
-| `./jobs.json` | `/app/jobs.json` | web、worker | 任務狀態記錄 |
-| `./models` | `/root/.cache/huggingface` | worker | Whisper 模型快取 |
+| `./data` | `/app/data` | web、worker | jobs.json + MP4 + SRT |
+| `./data/models` | `/root/.cache/whisper` | worker | Whisper 模型快取 |
 
 ### 4.4 GPU 設定
 
@@ -105,8 +105,9 @@ deploy:
 ### 4.5 常用指令
 
 ```bash
-# 首次啟動前，初始化 jobs.json
-echo "[]" > jobs.json
+# 初始化（首次 clone 後執行）
+mkdir -p data/downloads
+mkdir -p data/models
 
 # 建置並啟動
 docker compose up --build -d

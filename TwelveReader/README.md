@@ -256,6 +256,9 @@ sudo systemctl restart docker
 # Wipe DB, books, and TTS cache (bind mounts — not affected by down -v)
 docker compose down
 rm -rf ./data
+mkdir ./data/books    # first run only — data/ is git-ignored
+mkdir ./data/cache
+mkdir ./data/static
 docker compose up --build
 ```
 

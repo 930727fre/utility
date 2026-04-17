@@ -3,7 +3,7 @@ import os
 from contextlib import contextmanager
 
 DATA_DIR = os.environ.get("DATA_DIR", "/data")
-STATIC_DIR = os.environ.get("STATIC_DIR", "/app/static")
+STATIC_DIR = os.environ.get("STATIC_DIR", "/data/static")
 DB_PATH = os.path.join(DATA_DIR, "twelve.db")
 
 

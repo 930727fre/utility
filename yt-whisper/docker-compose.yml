@@ -9,7 +9,6 @@ services:
     ports:
       - "8080:8000"
     volumes:
-      - ./downloads:/app/downloads
       - ./data:/app/data
     environment:
       - REDIS_URL=redis://redis:6379/0
@@ -22,9 +21,8 @@ services:
     build: .
     command: celery -A tasks worker --loglevel=info --concurrency=1 -P solo
     volumes:
-      - ./downloads:/app/downloads
       - ./data:/app/data
-      - ./models:/root/.cache/whisper
+      - ./data/models:/root/.cache/whisper
     environment:
       - REDIS_URL=redis://redis:6379/0
       - JOBS_FILE=/app/data/jobs.json

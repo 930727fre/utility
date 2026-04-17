@@ -1,10 +1,9 @@
-data/books/
-data/cache/
-data/static/
-data/*.db
+**/data
 frontend/node_modules/
 frontend/dist/
-frontend/public/foliate-js/
-__pycache__/
+**/__pycache__/
 *.pyc
+*.pyo
 .env
+.env.*
+!.env.example

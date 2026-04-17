@@ -9,9 +9,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from storage import read_jobs, get_job, upsert_job, ensure_jobs_file
-from tasks import app as celery_app, process_video
+from tasks import process_video
 
-DOWNLOADS_DIR = Path("/app/downloads")
+DOWNLOADS_DIR = Path("/app/data/downloads")
 STATIC_DIR = Path("/app/static")
 
 app = FastAPI()
@@ -108,14 +108,10 @@ async def delete_job(job_id: str):
     if not job:
         raise HTTPException(status_code=404, detail="Not found")
 
-    if job["status"] in ("DOWNLOADING", "TRANSCRIBING"):
-        celery_app.control.revoke(job_id, terminate=True)
-
     for key in ("mp4", "srt"):
-        path = job["files"].get(key)
-        if path:
-            full = Path("/app") / path
-            full.unlink(missing_ok=True)
+        filename = job["files"].get(key)
+        if filename:
+            (DOWNLOADS_DIR / filename).unlink(missing_ok=True)
 
     job["status"] = "DELETED"
     job["updated_at"] = _now()
@@ -131,7 +127,7 @@ async def stream_video(job_id: str, request: Request):
     if not job or not job["files"].get("mp4"):
         raise HTTPException(status_code=404, detail="Not found")
 
-    path = Path("/app") / job["files"]["mp4"]
+    path = DOWNLOADS_DIR / job["files"]["mp4"]
     if not path.exists():
         raise HTTPException(status_code=404, detail="File missing")
 
@@ -173,7 +169,7 @@ async def stream_subtitle(job_id: str):
     if not job or not job["files"].get("srt"):
         raise HTTPException(status_code=404, detail="Not found")
 
-    path = Path("/app") / job["files"]["srt"]
+    path = DOWNLOADS_DIR / job["files"]["srt"]
     if not path.exists():
         raise HTTPException(status_code=404, detail="File missing")
 
