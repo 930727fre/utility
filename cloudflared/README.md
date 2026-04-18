@@ -8,8 +8,8 @@ Runs a Cloudflare Tunnel to expose all services via subdomains on your domain.
 2. Copy the tunnel token
 3. Under the tunnel → **Published application routes**, add one route per service:
    - `clock.domain.com` → `http://clock:80`
-   - `twelvereader.domain.com` → `http://frontend:3000`
-   - `yt-whisper.domain.com` → `http://web:8000`
+   - `twelvereader.domain.com` → `http://twelvereader-frontend:3000`
+   - `yt-whisper.domain.com` → `http://yt-whisper-frontend:8000`
    - `flashcard.domain.com` → `http://flashcard-frontend:80`
 4. Go to Zero Trust → Access → Applications → Add an application → Self-hosted:
    - Domain: `*.domain.com`

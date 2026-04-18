@@ -15,6 +15,7 @@ services:
 
   frontend:
     build: ./frontend
+    container_name: twelvereader-frontend
     environment:
       - BACKEND_URL=http://backend:8000
     depends_on:
