@@ -119,6 +119,30 @@ async def delete_job(job_id: str):
     return {"ok": True}
 
 
+# ── Downloads ─────────────────────────────────────────────────────────────
+
+@app.get("/api/download/{job_id}/mp4")
+async def download_mp4(job_id: str):
+    job = get_job(job_id)
+    if not job or not job["files"].get("mp4"):
+        raise HTTPException(status_code=404, detail="Not found")
+    path = DOWNLOADS_DIR / job["files"]["mp4"]
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="File missing")
+    return FileResponse(path, filename=f"{job['title']}.mp4", media_type="video/mp4")
+
+
+@app.get("/api/download/{job_id}/srt")
+async def download_srt(job_id: str):
+    job = get_job(job_id)
+    if not job or not job["files"].get("srt"):
+        raise HTTPException(status_code=404, detail="Not found")
+    path = DOWNLOADS_DIR / job["files"]["srt"]
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="File missing")
+    return FileResponse(path, filename=f"{job['title']}.srt", media_type="text/plain")
+
+
 # ── Streaming ──────────────────────────────────────────────────────────────
 
 @app.get("/api/stream/{job_id}/video")
