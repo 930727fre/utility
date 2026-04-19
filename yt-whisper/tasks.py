@@ -2,7 +2,6 @@ import json
 import multiprocessing
 import os
 import tempfile
-import uuid
 from datetime import datetime, timezone
 
 from celery import Celery
@@ -13,6 +12,9 @@ from storage import get_job, upsert_job, read_jobs, write_jobs, ensure_jobs_file
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 DOWNLOADS_DIR = "/app/data/downloads"
 
+DOWNLOAD_TIMEOUT = 60 * 60        # 1 hour
+TRANSCRIBE_TIMEOUT = 4 * 60 * 60  # 4 hours
+
 app = Celery("tasks", broker=REDIS_URL, backend=REDIS_URL)
 app.conf.task_track_started = True
 app.conf.broker_connection_retry_on_startup = True
@@ -22,25 +24,34 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _elapsed(since_iso: str) -> float:
+    start = datetime.fromisoformat(since_iso)
+    return (datetime.now(timezone.utc) - start).total_seconds()
+
+
 @app.on_after_configure.connect
-def _reset_stale_jobs(sender, **kwargs):
+def _recover_jobs(sender, **kwargs):
     ensure_jobs_file()
     jobs = read_jobs()
     changed = False
     for job in jobs:
-        if job["status"] in ("DOWNLOADING", "TRANSCRIBING"):
-            job["status"] = "FAILED"
-            job["error"] = "Interrupted (worker stopped)"
+        if job["status"] in ("DOWNLOADING", "TRANSCRIBING", "PENDING"):
+            job["status"] = "PENDING"
+            job["error"] = None
             job["updated_at"] = _now()
             changed = True
     if changed:
         write_jobs(jobs)
 
+    for job in read_jobs():
+        if job["status"] == "PENDING":
+            process_video.apply_async(args=[job["job_id"], job["url"]], task_id=job["job_id"])
+
 
 @app.task(bind=True)
 def process_video(self, job_id: str, url: str):
     job = get_job(job_id)
-    if not job or job["status"] == "DELETED":
+    if not job or job["status"] in ("DELETED", "SUCCESS", "DOWNLOADING", "TRANSCRIBING"):
         return
 
     base_path = os.path.join(DOWNLOADS_DIR, job_id)
@@ -50,10 +61,14 @@ def process_video(self, job_id: str, url: str):
     job["updated_at"] = _now()
     upsert_job(job)
 
+    download_started = _now()
+
     def progress_hook(d):
         current = get_job(job_id)
         if not current or current["status"] == "DELETED":
             raise Exception("Job cancelled")
+        if _elapsed(download_started) > DOWNLOAD_TIMEOUT:
+            raise Exception("Download timed out (1 hour limit)")
 
     ydl_opts = {
         "format": "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4]",
@@ -86,16 +101,27 @@ def process_video(self, job_id: str, url: str):
     ctx = multiprocessing.get_context("spawn")
     proc = ctx.Process(target=_transcribe_worker, args=(base_path + ".mp4", result_file))
     proc.start()
+    transcribe_started = _now()
 
     while True:
         proc.join(timeout=2)
         if not proc.is_alive():
             break
+
+        if _elapsed(transcribe_started) > TRANSCRIBE_TIMEOUT:
+            proc.terminate()
+            proc.join()
+            if os.path.exists(result_file):
+                os.unlink(result_file)
+            _fail(job_id, "Transcription timed out (4 hour limit)")
+            return
+
         current = get_job(job_id)
         if not current or current["status"] == "DELETED":
             proc.terminate()
             proc.join()
-            os.unlink(result_file) if os.path.exists(result_file) else None
+            if os.path.exists(result_file):
+                os.unlink(result_file)
             return
 
     if not os.path.exists(result_file):
@@ -109,7 +135,6 @@ def process_video(self, job_id: str, url: str):
     if "error" in payload:
         _fail(job_id, payload["error"])
         return
-    result = payload
 
     job = get_job(job_id)
     if not job or job["status"] == "DELETED":
@@ -117,7 +142,7 @@ def process_video(self, job_id: str, url: str):
 
     srt_path = base_path + ".srt"
     with open(srt_path, "w", encoding="utf-8") as f:
-        for i, seg in enumerate(result["segments"], 1):
+        for i, seg in enumerate(payload["segments"], 1):
             f.write(f"{i}\n")
             f.write(f"{_fmt_time(seg['start'])} --> {_fmt_time(seg['end'])}\n")
             f.write(f"{seg['text'].strip()}\n\n")
