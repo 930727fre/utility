@@ -6,6 +6,6 @@ COPY backup.sh /backup.sh
 RUN chmod +x /backup.sh
 
 RUN mkdir -p /var/spool/cron/crontabs && \
-    echo "0 4 * * * /backup.sh >> /var/log/backup.log 2>&1" > /var/spool/cron/crontabs/root
+    echo "0 20 * * * /backup.sh >> /var/log/backup.log 2>&1" > /var/spool/cron/crontabs/root
 
 CMD ["crond", "-f", "-d", "8"]
