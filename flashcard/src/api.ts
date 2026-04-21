@@ -25,6 +25,12 @@ export const api = {
       body: JSON.stringify(cards),
     }),
 
+  reviewCard: (id: string, rating: number) =>
+    apiFetch<Card>(`/cards/${id}/review`, {
+      method: 'POST',
+      body: JSON.stringify({ rating }),
+    }),
+
   updateCard: (id: string, fields: Partial<Card>) =>
     apiFetch<Card>(`/cards/${id}`, {
       method: 'PATCH',

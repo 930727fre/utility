@@ -1,58 +1,68 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import {
   Container, Paper, Title, Text, Button, Group, Stack,
   Progress, ActionIcon, ThemeIcon, SimpleGrid, Center, Box, Badge, Transition
 } from '@mantine/core';
 import { IconArrowLeft, IconCheck, IconLamp, IconBulb } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
-import { computeNext } from '../lib/fsrs';
-import { generatorParameters, Rating } from 'ts-fsrs';
+import { notifications } from '@mantine/notifications';
 import { api } from '../api';
 import type { Card } from '../types';
 
+const RATINGS = [
+  { label: 'Again', value: 1, color: '#ff6b6b', bg: 'rgba(255,107,107,0.1)' },
+  { label: 'Hard',  value: 2, color: '#ffd43b', bg: 'rgba(255,212,59,0.1)'  },
+  { label: 'Good',  value: 3, color: '#51cf66', bg: 'rgba(81,207,102,0.1)'  },
+  { label: 'Easy',  value: 4, color: '#339af0', bg: 'rgba(51,154,240,0.1)'  },
+] as const;
+
 export default function ReviewPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const reviewCard = useMutation({
+    mutationFn: ({ id, rating }: { id: string; rating: number }) => api.reviewCard(id, rating),
+    retry: 3,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['queue'] });
+    },
+    onError: () => {
+      notifications.show({ title: 'Sync failed', message: 'Rating could not be saved. The card will reappear next session.', color: 'red' });
+    },
+  });
 
   const [reviewQueue, setReviewQueue] = useState<Card[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const fsrsParamsRef = useRef<object>(generatorParameters());
-  const newCountRef = useRef(0);
+  const initialized = useRef(false);
+
+  const { data: queueData, isLoading } = useQuery({
+    queryKey: ['queue'],
+    queryFn: api.getQueue,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  });
 
   useEffect(() => {
-    api.getQueue().then(({ cards, daily_new_count, fsrs_params }) => {
-      if (fsrs_params && fsrs_params !== 'undefined') {
-        try { fsrsParamsRef.current = JSON.parse(fsrs_params); } catch { /* use default */ }
-      }
-      newCountRef.current = Number(daily_new_count || 0);
-      setReviewQueue(cards);
-      setTotalCount(cards.length);
-      setIsLoading(false);
-    }).catch(console.error);
-  }, []);
+    if (queueData && !initialized.current) {
+      initialized.current = true;
+      setReviewQueue(queueData.cards);
+      setTotalCount(queueData.cards.length);
+    }
+  }, [queueData]);
 
   const currentCard = reviewQueue[0];
   const reviewed = totalCount - reviewQueue.length;
 
-  const handleRate = useCallback((rating: Rating) => {
+  const handleRate = useCallback((rating: number) => {
     if (!currentCard) return;
-
-    const isNew = Number(currentCard.state) === 0;
-    const nextFields = computeNext(currentCard, rating, fsrsParamsRef.current as never);
-
-    console.log('[card update]', currentCard.id, nextFields);
-    api.updateCard(currentCard.id, nextFields).catch(console.error);
-
-    if (isNew) {
-      newCountRef.current += 1;
-      console.log('[settings update] daily_new_count', newCountRef.current);
-      api.updateSettings({ daily_new_count: String(newCountRef.current) }).catch(console.error);
-    }
-
+    reviewCard.mutate({ id: currentCard.id, rating });
     setReviewQueue(prev => prev.slice(1));
     setIsFlipped(false);
-  }, [currentCard]);
+  }, [currentCard, reviewCard]);
 
   useEffect(() => {
     if (!currentCard) return;
@@ -61,10 +71,8 @@ export default function ReviewPage() {
         e.preventDefault();
         setIsFlipped(true);
       } else if (isFlipped) {
-        const keyMap: Record<string, Rating> = {
-          '1': Rating.Again, '2': Rating.Hard, '3': Rating.Good, '4': Rating.Easy
-        };
-        if (keyMap[e.key]) handleRate(keyMap[e.key]);
+        const idx = parseInt(e.key) - 1;
+        if (idx >= 0 && idx < RATINGS.length) handleRate(RATINGS[idx].value);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -92,8 +100,8 @@ export default function ReviewPage() {
                 <IconCheck size={40} />
               </ThemeIcon>
               <Box>
-                <Title order={2} c="#e8eaf0">今日任務已完成！</Title>
-                <Text c="dimmed" mt="sm">做得好！所有的卡片都已經複習完畢。🔥</Text>
+                <Title order={2} c="#e8eaf0">Session Complete!</Title>
+                <Text c="dimmed" mt="sm">Great job! All cards have been reviewed. 🔥</Text>
               </Box>
               <Button
                 size="lg"
@@ -102,7 +110,7 @@ export default function ReviewPage() {
                 onClick={() => navigate('/')}
                 style={{ background: 'linear-gradient(135deg, #1a3d28, #2a5c3e)', border: 'none' }}
               >
-                回到儀表板
+                Back to Dashboard
               </Button>
             </Stack>
           </Paper>
@@ -197,19 +205,14 @@ export default function ReviewPage() {
 
         {isFlipped ? (
           <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
-            {([
-              { label: 'Again', color: '#ff6b6b', rating: Rating.Again, bg: 'rgba(255,107,107,0.1)' },
-              { label: 'Hard',  color: '#ffd43b', rating: Rating.Hard,  bg: 'rgba(255,212,59,0.1)'  },
-              { label: 'Good',  color: '#51cf66', rating: Rating.Good,  bg: 'rgba(81,207,102,0.1)'  },
-              { label: 'Easy',  color: '#339af0', rating: Rating.Easy,  bg: 'rgba(51,154,240,0.1)'  },
-            ] as const).map(({ label, color, rating, bg }, i) => (
+            {RATINGS.map(({ label, value, color, bg }, i) => (
               <Button
                 key={label}
                 variant="light"
                 color="gray"
                 size="xl"
                 radius="md"
-                onClick={() => handleRate(rating)}
+                onClick={() => handleRate(value)}
                 styles={{
                   root: { backgroundColor: bg, border: `1px solid ${color}33`, height: 70 },
                   inner: { flexDirection: 'column', gap: 2 }

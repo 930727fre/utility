@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Container, Textarea, Button, Title, Stack, Paper,
-  ActionIcon, Group, Text, Alert, Code, Box, Transition, ThemeIcon
+  ActionIcon, Group, Text, Alert, Code, Box, ThemeIcon
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconArrowLeft, IconDatabaseImport, IconAlertCircle, IconCheck, IconFileText } from '@tabler/icons-react';
@@ -40,6 +40,8 @@ export default function BatchAddPage() {
           last_review: '',
           lang: 'en',
           created_at: new Date().toISOString(),
+          reps: 0,
+          learning_steps: 0,
         };
       });
 
@@ -47,15 +49,15 @@ export default function BatchAddPage() {
       await api.batchAddCards(newCards);
 
       notifications.show({
-        title: '匯入成功',
-        message: `已成功匯入 ${newCards.length} 張卡片`,
+        title: 'Import Successful',
+        message: `Successfully imported ${newCards.length} cards`,
         color: 'green',
         icon: <IconCheck size={16} />
       });
 
       navigate('/');
     } catch {
-      notifications.show({ title: '匯入失敗', message: '請檢查網路連線', color: 'red' });
+      notifications.show({ title: 'Import Failed', message: 'Check network connection', color: 'red' });
     } finally {
       setLoading(false);
     }
@@ -75,9 +77,7 @@ export default function BatchAddPage() {
       }}
     >
       <Container size="sm" maw={520} w="100%" py="xl" px="md">
-        <Transition mounted={true} transition="slide-up" duration={400}>
-          {(styles) => (
-            <div style={styles}>
+        <div>
               <Stack gap="lg">
                 {/* 頂部標題 */}
                 <Group justify="space-between">
@@ -92,7 +92,7 @@ export default function BatchAddPage() {
                     >
                       <IconArrowLeft size={24} />
                     </ActionIcon>
-                    <Title order={2} c="#e8eaf0" style={{ letterSpacing: '-0.5px' }}>批量匯入</Title>
+                    <Title order={2} c="#e8eaf0" style={{ letterSpacing: '-0.5px' }}>Batch Import</Title>
                   </Group>
                   <ThemeIcon variant="light" color="violet" size="lg" radius="md">
                     <IconFileText size={20} />
@@ -110,7 +110,7 @@ export default function BatchAddPage() {
                     title: { fontWeight: 700 }
                   }}
                 >
-                  <Text size="xs" c="dimmed" mb={4} fw={600}>格式說明 (每行一筆)：</Text>
+                  <Text size="xs" c="dimmed" mb={4} fw={600}>Format (one per line):</Text>
                   <Code
                     block
                     style={{
@@ -120,7 +120,7 @@ export default function BatchAddPage() {
                       border: '1px solid rgba(255,255,255,0.05)'
                     }}
                   >
-                    單字::筆記::例句
+                    word::note::sentence
                   </Code>
                 </Alert>
 
@@ -180,15 +180,13 @@ export default function BatchAddPage() {
                           fontWeight: 700
                         }}
                       >
-                        開始匯入資料庫
+                        Import to Database
                       </Button>
                     </Box>
                   </Stack>
                 </Paper>
               </Stack>
-            </div>
-          )}
-        </Transition>
+        </div>
       </Container>
     </Box>
   );

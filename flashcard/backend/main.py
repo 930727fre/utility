@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
-from models import Card, CardUpdate, Settings, SettingsUpdate, SyncPayload
+from fsrs import Scheduler as FSRSScheduler, Card as FSRSCard, Rating as FSRSRating, State as FSRSState
+from models import Card, CardUpdate, ReviewRequest, Settings, SettingsUpdate, SyncPayload
 
 TZ = ZoneInfo("Asia/Taipei")
 
@@ -46,9 +47,17 @@ def init_db(conn: sqlite3.Connection) -> None:
             state INTEGER DEFAULT 0,
             last_review TEXT DEFAULT '',
             lang TEXT DEFAULT 'en',
-            created_at TEXT DEFAULT ''
+            created_at TEXT DEFAULT '',
+            reps INTEGER DEFAULT 0,
+            learning_steps INTEGER DEFAULT 0
         )
     """)
+    for col, defn in [('reps', 'INTEGER DEFAULT 0'), ('learning_steps', 'INTEGER DEFAULT 0')]:
+        try:
+            conn.execute(f"ALTER TABLE cards ADD COLUMN {col} {defn}")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass
     conn.execute("""
         CREATE TABLE IF NOT EXISTS settings (
             key TEXT PRIMARY KEY,
@@ -132,8 +141,7 @@ def get_queue():
     conn.close()
     return {
         "cards": cards,
-        "daily_new_count": s.get('daily_new_count', '0'),
-        "fsrs_params": s.get('fsrs_params', ''),
+        "daily_new_count": int(s.get('daily_new_count', '0') or '0'),
     }
 
 
@@ -166,12 +174,13 @@ def batch_add_cards(cards: list[Card]):
             """
             INSERT OR IGNORE INTO cards
               (id, word, sentence, note, due, stability, difficulty,
-               elapsed_days, scheduled_days, lapses, state, last_review, lang, created_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+               elapsed_days, scheduled_days, lapses, state, last_review, lang, created_at,
+               reps, learning_steps)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """,
             (c.id, c.word, c.sentence, c.note, c.due, c.stability, c.difficulty,
              c.elapsed_days, c.scheduled_days, c.lapses, c.state, c.last_review,
-             c.lang, c.created_at),
+             c.lang, c.created_at, c.reps, c.learning_steps),
         )
     conn.commit()
     conn.close()
@@ -196,7 +205,76 @@ def update_card(card_id: str, body: CardUpdate):
 
     row = conn.execute("SELECT * FROM cards WHERE id = ?", (card_id,)).fetchone()
     conn.close()
-    return dict(row)
+    result = dict(row)
+    print(f"[update_card] id={card_id} word={result.get('word')} state={result.get('state')} due={result.get('due')}", flush=True)
+    return result
+
+
+@app.post("/cards/{card_id}/review")
+def review_card(card_id: str, body: ReviewRequest):
+    conn = get_db()
+    row = conn.execute("SELECT * FROM cards WHERE id = ?", (card_id,)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Card not found")
+
+    d = dict(row)
+    was_new = d['state'] == 0
+    now = datetime.now(timezone.utc)
+
+    # py-fsrs has no New(0) state; new cards are constructed bare
+    if was_new:
+        fsrs_card = FSRSCard()
+    else:
+        fsrs_card = FSRSCard(
+            state=FSRSState(d['state']),
+            step=d['learning_steps'] or None,
+            stability=d['stability'] or None,
+            difficulty=d['difficulty'] or None,
+            due=datetime.fromisoformat(d['due']) if d['due'] else None,
+            last_review=datetime.fromisoformat(d['last_review']) if d['last_review'] else None,
+        )
+
+    scheduler = FSRSScheduler()
+    next_card, _ = scheduler.review_card(fsrs_card, FSRSRating(body.rating), now)
+
+    old_last_review = datetime.fromisoformat(d['last_review']) if d['last_review'] else now
+    elapsed_days = (now - old_last_review).days
+    scheduled_days = max(0, (next_card.due - now).days) if next_card.due else 0
+    new_lapses = d['lapses'] + (1 if d['state'] == 2 and int(next_card.state) == 3 else 0)
+    new_reps = d['reps'] + 1
+
+    conn.execute("""
+        UPDATE cards SET
+            due=?, stability=?, difficulty=?, elapsed_days=?, scheduled_days=?,
+            lapses=?, state=?, last_review=?, reps=?, learning_steps=?
+        WHERE id=?
+    """, (
+        next_card.due.isoformat() if next_card.due else '',
+        next_card.stability or 0,
+        next_card.difficulty or 0,
+        elapsed_days,
+        scheduled_days,
+        new_lapses,
+        int(next_card.state),
+        now.isoformat(),
+        new_reps,
+        next_card.step if next_card.step is not None else 0,
+        card_id,
+    ))
+
+    if was_new:
+        s = fetch_settings(conn)
+        new_daily = int(s.get('daily_new_count', '0') or '0') + 1
+        conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+                     ('daily_new_count', str(new_daily)))
+
+    conn.commit()
+    row = conn.execute("SELECT * FROM cards WHERE id = ?", (card_id,)).fetchone()
+    conn.close()
+    result = dict(row)
+    print(f"[review_card] id={card_id} word={result.get('word')} rating={body.rating} state={result.get('state')} due={result.get('due')}", flush=True)
+    return result
 
 
 def apply_streak_logic(conn: sqlite3.Connection, s: dict) -> dict:
@@ -264,12 +342,13 @@ def sync_all(payload: SyncPayload):
             """
             INSERT OR REPLACE INTO cards
               (id, word, sentence, note, due, stability, difficulty,
-               elapsed_days, scheduled_days, lapses, state, last_review, lang, created_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+               elapsed_days, scheduled_days, lapses, state, last_review, lang, created_at,
+               reps, learning_steps)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """,
             (c.id, c.word, c.sentence, c.note, c.due, c.stability, c.difficulty,
              c.elapsed_days, c.scheduled_days, c.lapses, c.state, c.last_review,
-             c.lang, c.created_at),
+             c.lang, c.created_at, c.reps, c.learning_steps),
         )
     s = payload.settings.model_dump()
     s['last_modified'] = now_iso()

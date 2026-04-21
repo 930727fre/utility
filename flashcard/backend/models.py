@@ -17,6 +17,8 @@ class Card(BaseModel):
     last_review: str = ''
     lang: str = 'en'
     created_at: str = ''
+    reps: int = 0
+    learning_steps: int = 0
 
 
 class CardUpdate(BaseModel):
@@ -32,6 +34,8 @@ class CardUpdate(BaseModel):
     state: Optional[int] = None
     last_review: Optional[str] = None
     lang: Optional[str] = None
+    reps: Optional[int] = None
+    learning_steps: Optional[int] = None
 
 
 class Settings(BaseModel):
@@ -49,6 +53,10 @@ class SettingsUpdate(BaseModel):
     streak_count: Optional[str] = None
     streak_last_date: Optional[str] = None
     daily_new_count: Optional[str] = None
+
+
+class ReviewRequest(BaseModel):
+    rating: int  # 1=Again 2=Hard 3=Good 4=Easy
 
 
 class SyncPayload(BaseModel):

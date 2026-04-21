@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Container, Title, Text, Paper, Group, Stack,
   Button, ThemeIcon, Skeleton, Box, Badge, Center, Progress
 } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import type { Stats } from '../types';
 import {
   IconFlame, IconCards, IconPlus,
   IconPlayerPlay, IconUpload, IconList, IconCheck
@@ -17,7 +17,7 @@ const PHASE_CONFIG = {
     iconColor: 'green', tagColor: '#4dbb7a', tag: 'All Clear',
     icon: <IconCheck size={22} />,
     badge: { color: '#1a3d28', text: '#4dbb7a', border: '#1e5c36', label: 'All Clear' },
-    button: { gradient: { from: '#1a3d28', to: '#2a5c3e' }, label: '今日任務已達成！' },
+    button: { gradient: { from: '#1a3d28', to: '#2a5c3e' }, label: 'All done for today!' },
     disabled: true,
   },
   review: {
@@ -39,12 +39,18 @@ const PHASE_CONFIG = {
 } as const;
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<Stats | null>(null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const { data: stats } = useQuery({
+    queryKey: ['stats'],
+    queryFn: api.getStats,
+    staleTime: 30_000,
+  });
 
   useEffect(() => {
-    api.getStats().then(setStats).catch(console.error);
-  }, []);
+    queryClient.prefetchQuery({ queryKey: ['queue'], queryFn: api.getQueue, staleTime: 60_000 });
+  }, [queryClient]);
 
   if (!stats) {
     return (
@@ -77,12 +83,12 @@ export default function DashboardPage() {
   const cfg = PHASE_CONFIG[phase];
 
   const phaseTitle = phase === 'done'
-    ? <Text fw={600} size="lg" c="#e8eaf0">今日沒有待辦任務 🎉</Text>
+    ? <Text fw={600} size="lg" c="#e8eaf0">No tasks for today 🎉</Text>
     : phase === 'review'
-    ? <Text fw={600} size="lg" c="#e8eaf0">剩餘 <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 20 }}>{queueSize}</span> 張待複習</Text>
-    : <Text fw={600} size="lg" c="#e8eaf0">剩下 <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 20 }}>{queueSize}</span> 張新單字要背</Text>;
+    ? <Text fw={600} size="lg" c="#e8eaf0"><span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 20 }}>{queueSize}</span> cards to review</Text>
+    : <Text fw={600} size="lg" c="#e8eaf0"><span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 20 }}>{queueSize}</span> new cards to learn</Text>;
 
-  const buttonLabel = cfg.button.label ?? `開始${phase === 'learning' ? '學習' : '複習'} (${queueSize} 張)`;
+  const buttonLabel = cfg.button.label ?? `Start ${phase === 'learning' ? 'Learning' : 'Review'} (${queueSize} cards)`;
 
   return (
     <div style={{
@@ -179,7 +185,7 @@ export default function DashboardPage() {
               onClick={() => navigate('/batch-add')}
               style={{ borderColor: '#2a2f45', color: '#e8eaf0', height: 48 }}
             >
-              批量匯入
+              Batch Import
             </Button>
             <Button
               variant="outline"

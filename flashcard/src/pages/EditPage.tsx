@@ -26,8 +26,8 @@ export default function EditPage() {
     try {
       const results = await api.searchCards(q);
       setCandidates(results);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      notifications.show({ title: 'Search failed', message: 'Check network connection', color: 'red' });
     }
   };
 
