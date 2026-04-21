@@ -17,14 +17,6 @@ export interface Card {
   learning_steps: number;
 }
 
-export interface Settings {
-  fsrs_params: string;
-  streak_count: string;
-  streak_last_date: string;
-  daily_new_count: string;
-  last_modified: string;
-}
-
 export interface Stats {
   streak_count: string;
   due_count: number;

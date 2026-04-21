@@ -1,4 +1,4 @@
-import type { Card, Settings, Stats, Queue } from './types';
+import type { Card, Stats, Queue } from './types';
 
 const API_BASE = '/api';
 
@@ -33,12 +33,6 @@ export const api = {
 
   updateCard: (id: string, fields: Partial<Card>) =>
     apiFetch<Card>(`/cards/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(fields),
-    }),
-
-  updateSettings: (fields: Partial<Settings>) =>
-    apiFetch<Settings>('/settings', {
       method: 'PATCH',
       body: JSON.stringify(fields),
     }),
