@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
-  <title>Workout Timer</title>
+  <title>clock</title>
   <link rel="icon" href="https://emojicdn.elk.sh/⏱️">
   <link rel="apple-touch-icon" href="https://emojicdn.elk.sh/⏱️">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
@@ -133,12 +133,87 @@
     .btn-primary:hover { opacity: 0.85; }
     .btn-secondary { background: #2a2a38; color: #aaa; }
     .btn-secondary:hover { background: #333345; }
+
+    /* iOS-style picker */
+    .picker-section {
+      display: flex;
+      gap: 1rem;
+      width: 100%;
+      height: 220px;
+    }
+    .picker-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .picker-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #555;
+    }
+    .picker-wrap {
+      position: relative;
+      width: 100%;
+      flex: 1;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    .picker-mask-top {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 40%;
+      background: linear-gradient(to bottom, #1a1a24 20%, transparent);
+      z-index: 2;
+      pointer-events: none;
+    }
+    .picker-mask-bottom {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 40%;
+      background: linear-gradient(to top, #1a1a24 20%, transparent);
+      z-index: 2;
+      pointer-events: none;
+    }
+    .picker-highlight {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 100%;
+      height: 44px;
+      border-top: 1px solid #3a3a50;
+      border-bottom: 1px solid #3a3a50;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .picker-list {
+      height: 100%;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .picker-list::-webkit-scrollbar { display: none; }
+    .picker-item {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      scroll-snap-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #e8e8f0;
+    }
   </style>
 </head>
 <body>
 
 <div class="card phase-idle" id="card">
-  <div class="ring-wrapper">
+  <div class="ring-wrapper" id="ring-section">
     <svg width="220" height="220" viewBox="0 0 220 220">
       <circle class="ring-bg" cx="110" cy="110" r="96"/>
       <circle class="ring-fg" id="interval-ring" cx="110" cy="110" r="96"
@@ -147,6 +222,27 @@
     <div class="ring-center">
       <div class="time-display" id="interval-display">01:00</div>
       <div class="sub-label" id="interval-sub">ready</div>
+    </div>
+  </div>
+
+  <div class="picker-section" id="picker-section" style="display:none">
+    <div class="picker-col">
+      <div class="picker-label">Work</div>
+      <div class="picker-wrap">
+        <div class="picker-mask-top"></div>
+        <div class="picker-highlight"></div>
+        <div class="picker-mask-bottom"></div>
+        <div class="picker-list" id="picker-work"></div>
+      </div>
+    </div>
+    <div class="picker-col">
+      <div class="picker-label">Rest</div>
+      <div class="picker-wrap">
+        <div class="picker-mask-top"></div>
+        <div class="picker-highlight"></div>
+        <div class="picker-mask-bottom"></div>
+        <div class="picker-list" id="picker-rest"></div>
+      </div>
     </div>
   </div>
 
@@ -159,23 +255,71 @@
 </div>
 
 <script>
-  const CIRC = 2 * Math.PI * 96; // ~603
+  const CIRC = 2 * Math.PI * 96;
+  const ITEM_H = 44;
+
+  // Values: 5s to 600s in 5s steps
+  const VALUES = Array.from({length: 120}, (_, i) => (i + 1) * 5);
+
+  function fmtVal(s) {
+    const m = Math.floor(s / 60), sec = s % 60;
+    return m > 0 ? (sec > 0 ? `${m}m ${sec}s` : `${m}m`) : `${sec}s`;
+  }
+
+  function buildPicker(listEl, defaultVal) {
+    const spacer = () => { const d = document.createElement('div'); d.style.height = ITEM_H * 2 + 'px'; return d; };
+    listEl.appendChild(spacer());
+    VALUES.forEach(v => {
+      const el = document.createElement('div');
+      el.className = 'picker-item';
+      el.textContent = fmtVal(v);
+      listEl.appendChild(el);
+    });
+    listEl.appendChild(spacer());
+    const idx = VALUES.indexOf(defaultVal);
+    listEl.scrollTop = idx * ITEM_H;
+  }
+
+  function getPickerValue(listEl) {
+    const idx = Math.round(listEl.scrollTop / ITEM_H);
+    return VALUES[Math.max(0, Math.min(idx, VALUES.length - 1))];
+  }
 
   (() => {
-    const WORKOUT = 60, REST = 30;
+    let WORKOUT = 60, REST = 30;
     let phase = 'idle', remaining = WORKOUT, round = 1;
     let running = false, raf = null, startTs = 0, startRemaining = WORKOUT;
 
-    const display   = document.getElementById('interval-display');
-    const sub       = document.getElementById('interval-sub');
-    const ring      = document.getElementById('interval-ring');
-    const card      = document.getElementById('card');
-    const rndCount  = document.getElementById('round-count');
-    const btnStart  = document.getElementById('interval-start');
-    const btnReset  = document.getElementById('interval-reset');
+    const display      = document.getElementById('interval-display');
+    const sub          = document.getElementById('interval-sub');
+    const ring         = document.getElementById('interval-ring');
+    const card         = document.getElementById('card');
+    const rndCount     = document.getElementById('round-count');
+    const btnStart     = document.getElementById('interval-start');
+    const btnReset     = document.getElementById('interval-reset');
+    const ringSection  = document.getElementById('ring-section');
+    const pickerSection= document.getElementById('picker-section');
+    const pickerWork   = document.getElementById('picker-work');
+    const pickerRest   = document.getElementById('picker-rest');
+
+    buildPicker(pickerWork, WORKOUT);
+    buildPicker(pickerRest, REST);
 
     function pad(n) { return String(n).padStart(2,'0'); }
     function fmtSec(s) { return `${pad(Math.floor(s/60))}:${pad(s%60)}`; }
+
+    function showPicker() {
+      ringSection.style.display = 'none';
+      pickerSection.style.display = 'flex';
+      requestAnimationFrame(() => {
+        pickerWork.scrollTop = VALUES.indexOf(WORKOUT) * ITEM_H;
+        pickerRest.scrollTop = VALUES.indexOf(REST) * ITEM_H;
+      });
+    }
+    function showRing() {
+      pickerSection.style.display = 'none';
+      ringSection.style.display = 'block';
+    }
 
     function applyPhase(p) {
       phase = p;
@@ -186,10 +330,10 @@
 
       if (p === 'workout') {
         ring.style.stroke = '#4ade80';
-        sub.textContent = '1 min';
+        sub.textContent = fmtVal(WORKOUT);
       } else if (p === 'rest') {
         ring.style.stroke = '#60a5fa';
-        sub.textContent = '30 sec';
+        sub.textContent = fmtVal(REST);
       } else {
         ring.style.stroke = '#6c63ff';
         sub.textContent = 'ready';
@@ -232,11 +376,18 @@
 
     btnStart.addEventListener('click', () => {
       if (!running) {
+        if (phase === 'idle') {
+          WORKOUT = getPickerValue(pickerWork);
+          REST    = getPickerValue(pickerRest);
+          remaining = WORKOUT;
+          startRemaining = WORKOUT;
+          showRing();
+          applyPhase('workout');
+        }
         running = true;
         startTs = performance.now();
         startRemaining = remaining;
         btnStart.textContent = 'Pause';
-        if (phase === 'idle') applyPhase('workout');
         tick();
       } else {
         cancelAnimationFrame(raf);
@@ -248,16 +399,15 @@
     btnReset.addEventListener('click', () => {
       cancelAnimationFrame(raf);
       running = false;
-      remaining = WORKOUT; round = 1;
-      startRemaining = WORKOUT;
+      round = 1;
       btnStart.textContent = 'Start';
       rndCount.textContent = 1;
       applyPhase('idle');
-      render(WORKOUT);
+      showPicker();
     });
 
     applyPhase('idle');
-    render(WORKOUT);
+    showPicker();
   })();
 </script>
 </body>
