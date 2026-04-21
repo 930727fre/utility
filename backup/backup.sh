@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-DATE=$(date +%Y-%m-%d)
+DATE=$(TZ=Asia/Taipei date +%Y-%m-%d)
 
 echo "[$(date)] Starting backup"
 
