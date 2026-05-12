@@ -2,8 +2,8 @@ import os
 from fastapi import APIRouter, HTTPException
 
 import storage
-from epub_parser import load_md, split_paragraphs, paragraph_id as make_paragraph_id
-from tts_service import tts_service, _cache_path
+from conversion import load_md, split_paragraphs, paragraph_id as make_paragraph_id
+from tts_service import tts_service, _cache_path, DING_URL
 
 router = APIRouter(prefix="/api/tts", tags=["tts"])
 
@@ -30,10 +30,13 @@ async def generate_tts(book_id: str, index: int):
     if index < 0 or index >= len(paragraphs):
         raise HTTPException(404, "Paragraph index out of range")
 
-    text = paragraphs[index]
-    pid = make_paragraph_id(book_id, index, text)
-    url, cached = await tts_service.get_or_generate(book_id, pid, text)
-    return {"url": url, "cached": cached}
+    para = paragraphs[index]
+    if para["kind"] in ("image", "table"):
+        return {"url": DING_URL, "stop": True}
+
+    pid = make_paragraph_id(book_id, index, para["text"])
+    url, stop = await tts_service.get_or_generate(book_id, pid, para["text"])
+    return {"url": url, "stop": stop}
 
 
 @router.delete("/{book_id}/{index}")
@@ -50,7 +53,7 @@ async def evict_cached(book_id: str, index: int):
 
     paragraphs = split_paragraphs(md)
     if 0 <= index < len(paragraphs):
-        pid = make_paragraph_id(book_id, index, paragraphs[index])
+        pid = make_paragraph_id(book_id, index, paragraphs[index]["text"])
         path = _cache_path(book_id, pid)
         if os.path.exists(path):
             os.remove(path)

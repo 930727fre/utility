@@ -68,12 +68,12 @@ export default function BookList({ onOpen }) {
         <button style={styles.uploadBtn} onClick={() => fileRef.current.click()} disabled={uploading}>
           {uploading ? 'Uploading…' : '+ Add Book'}
         </button>
-        <input ref={fileRef} type="file" accept=".epub" style={{ display: 'none' }} onChange={handleUpload} />
+        <input ref={fileRef} type="file" accept=".epub,.pdf" style={{ display: 'none' }} onChange={handleUpload} />
       </header>
 
       <div style={styles.grid}>
         {books.length === 0 && (
-          <p style={styles.empty}>No books yet. Upload an EPUB to get started.</p>
+          <p style={styles.empty}>No books yet. Upload an EPUB or PDF to get started.</p>
         )}
         {books.map(book => (
           <div key={book.id} style={styles.card}>

@@ -97,13 +97,16 @@ export default function Reader({ book, onClose, backendDown }) {
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
-                      img: ({src, alt}) => (
-                        <img
-                          src={src?.startsWith('images/') ? `/api/books/${book.id}/assets/${src}` : src}
-                          alt={alt}
-                          style={{maxWidth:'100%', height:'auto', borderRadius:4}}
-                        />
-                      )
+                      img: ({src, alt}) => {
+                        const isAbsolute = !src || /^(https?:|data:|\/)/.test(src)
+                        return (
+                          <img
+                            src={isAbsolute ? src : `/api/books/${book.id}/assets/${src}`}
+                            alt={alt}
+                            style={{maxWidth:'100%', height:'auto', borderRadius:4}}
+                          />
+                        )
+                      }
                     }}
                   >{paragraphs[vItem.index]}</ReactMarkdown>
                 </div>

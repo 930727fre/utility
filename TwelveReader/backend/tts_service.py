@@ -15,9 +15,11 @@ import numpy as np
 import soundfile as sf
 import torch
 
+from conversion import to_speech_text
 from storage import DATA_DIR
 
 MAX_RETRIES = 3
+DING_URL = "/audio/ding.wav"
 
 
 def _cache_path(book_id: str, paragraph_id: str) -> str:
@@ -44,7 +46,6 @@ class TTSService:
         self._sample_rate = 24000
 
     async def _generate_wav(self, text: str, out_path: str) -> bool:
-        """Run Kokoro inference in a thread, write WAV. Returns True on success."""
         loop = asyncio.get_event_loop()
 
         def _run():
@@ -65,27 +66,32 @@ class TTSService:
             return await loop.run_in_executor(None, _run)
 
     async def get_or_generate(
-        self, book_id: str, paragraph_id: str, text: str
+        self, book_id: str, paragraph_id: str, md_text: str
     ) -> tuple[str, bool]:
         """
-        Return (audio_url, cached).
-        Generates if not cached. Retries up to MAX_RETRIES times.
-        Falls back to tts_failed.wav URL after all retries exhausted.
+        Return (audio_url, stop).
+        `stop=True` means the frontend should pause after the WAV finishes
+        instead of auto-advancing — used for Kokoro failures so the user can
+        notice and decide. Image/table paragraphs are stopped by the caller
+        before reaching this method.
         """
         path = _cache_path(book_id, paragraph_id)
         if os.path.exists(path):
-            return _audio_url(book_id, paragraph_id), True
+            return _audio_url(book_id, paragraph_id), False
+
+        speech = to_speech_text(md_text)
+        if not speech:
+            return DING_URL, True
 
         for attempt in range(MAX_RETRIES):
             try:
-                ok = await self._generate_wav(text, path)
+                ok = await self._generate_wav(speech, path)
                 if ok and os.path.exists(path):
                     return _audio_url(book_id, paragraph_id), False
             except Exception as exc:
                 print(f"[TTS] attempt {attempt + 1} failed: {exc}")
 
-        # All retries failed — return fallback
-        return "/audio/tts_failed.wav", False
+        return DING_URL, True
 
     async def clear_cache(self, book_id: str):
         cache_dir = os.path.join(DATA_DIR, "cache", book_id)

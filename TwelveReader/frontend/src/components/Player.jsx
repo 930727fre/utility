@@ -2,12 +2,11 @@ const STATE_LABEL = {
   IDLE: 'Paused',
   GENERATING: 'Loading…',
   PLAYING: 'Playing',
-  PLAYING_FALLBACK: 'Error',
 }
 
 export default function Player({ state, currentIndex, paragraphs, onPlay, onPause, onResume }) {
   const current = paragraphs[currentIndex]
-  const isPlaying = state === 'PLAYING' || state === 'PLAYING_FALLBACK'
+  const isPlaying = state === 'PLAYING'
   const isGenerating = state === 'GENERATING'
 
   const handleToggle = () => {

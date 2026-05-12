@@ -4,8 +4,10 @@ services:
     container_name: twelvereader-backend
     volumes:
       - ./data:/data
+      - model-cache:/root/.cache
     environment:
       - DATA_DIR=/data
+      - AUDIO_DIR=/app/audio
     deploy:
       resources:
         reservations:
@@ -27,6 +29,9 @@ services:
     networks:
       - default
       - my_network
+
+volumes:
+  model-cache:
 
 networks:
   my_network:

@@ -25,7 +25,23 @@ The entire Ollama + BeautifulSoup conversion pipeline (`epub_parser.py` and the 
 - **`/api/books/{id}/epub` route** is EPUB-specific. Rename to `/source` and serve whatever extension was uploaded.
 - **`bookshelf.json`** has no `source_format` field. Add one so the frontend can know whether to offer "view source PDF" vs. "view source EPUB" downloads.
 - **Files safe to delete during the swap**: `backend/epub_parser.py`, `backend/test_data.txt`, `backend/test_gemini.py`, `backend/bitcoin*`, `backend/routers/paragraphs.py` (empty placeholder).
-- **`requirements.txt`** drops `beautifulsoup4` and `httpx`. Adds `marker-pdf[full]` (the `[full]` extras enable non-PDF formats).
+- **`requirements.txt`** drops `httpx` (no more Ollama HTTP calls). **Keeps** `beautifulsoup4` and adds `markdown` for the new MD-stripping step (see below). Adds `marker-pdf[full]` (the `[full]` extras enable non-PDF formats).
+
+### Behavior changes that ride along with the swap
+
+- **TTS markdown stripping.** The current pipeline passes raw markdown to Kokoro, so it has been pronouncing `**`, `[`, `|`, etc. Marker emits more formatting than the old Ollama path (GFM tables, image refs, possibly inline HTML), so this becomes visibly worse. Fix is a two-line helper in `tts_service.py`:
+  ```python
+  def to_speech_text(md: str) -> str:
+      html = markdown(md)
+      return BeautifulSoup(html, "html.parser").get_text(separator=" ", strip=True)
+  ```
+  Called on each paragraph before handing to Kokoro. Cached WAV key stays derived from the raw paragraph (unchanged).
+
+- **Per-paragraph kind, with ding-cue stops on images/tables.** Listener should pick up the device when something visual appears.
+  - `split_paragraphs` returns typed entries: `{kind: 'text' | 'image' | 'table' | 'heading', text: str}` instead of plain strings. Classification is regex-against-marker-output (image: starts with `![`, table: starts with `|`, heading: starts with `#`).
+  - For `image` / `table` paragraphs the TTS endpoint returns a stock ding WAV (stored next to `tts_failed.wav` in `/data/static/`) instead of running Kokoro.
+  - Player state machine gains a `WAITING_FOR_USER` state: after the ding ends on an image/table paragraph, do not auto-advance. Show a "Continue" affordance; tapping it resumes playback at paragraph N+1.
+  - Frontend already renders the image/table markdown — no change to display, only to playback flow.
 
 The current pipeline documentation below is **kept for reference until the refactor is verified end-to-end** — then this README will be rewritten from scratch.
 

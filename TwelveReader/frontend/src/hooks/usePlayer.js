@@ -1,10 +1,14 @@
 /**
  * Player state machine
  *
- * States: IDLE | GENERATING | PLAYING | PLAYING_FALLBACK
+ * States: IDLE | GENERATING | PLAYING
  *
  * paragraphs: string[] — plain text, index is the stable identity
  * Sliding window: [N-1 kept] [N playing] [N+1 prefetch] [N+2 prefetch]
+ *
+ * Stop-after-play: when the backend returns `stop: true` for a paragraph
+ * (image, table, or Kokoro failure), the player pauses instead of advancing.
+ * User taps play to resume on the next paragraph.
  */
 
 import { useRef, useState, useCallback, useEffect } from 'react'
@@ -16,10 +20,11 @@ export function usePlayer(bookId, paragraphs) {
 
   const audioRef = useRef(new Audio())
   const prefetchAbortRef = useRef(false)
-  const ttsUrlCacheRef = useRef(new Map())   // index → url
+  const ttsUrlCacheRef = useRef(new Map())   // index → {url, stop}
   const cachedWindowRef = useRef(new Set())  // indices currently on server cache
   const transitioningRef = useRef(false)
   const mediaActionRef = useRef({})
+  const stopAfterRef = useRef(false)         // whether currently-playing paragraph stops after ending
 
   // Save bookmark while playing
   useEffect(() => {
@@ -32,7 +37,7 @@ export function usePlayer(bookId, paragraphs) {
     const audio = audioRef.current
     const onExternalPause = () => {
       if (transitioningRef.current) return
-      setState(s => (s === 'PLAYING' || s === 'PLAYING_FALLBACK') ? 'IDLE' : s)
+      setState(s => s === 'PLAYING' ? 'IDLE' : s)
     }
     audio.addEventListener('pause', onExternalPause)
     return () => audio.removeEventListener('pause', onExternalPause)
@@ -66,19 +71,25 @@ export function usePlayer(bookId, paragraphs) {
   useEffect(() => {
     if (!('mediaSession' in navigator)) return
     navigator.mediaSession.playbackState =
-      state === 'PLAYING' || state === 'PLAYING_FALLBACK' || state === 'GENERATING'
-        ? 'playing' : 'paused'
+      state === 'PLAYING' || state === 'GENERATING' ? 'playing' : 'paused'
   }, [state])
 
   const _advanceRef = useRef(null)
   const _startAtRef = useRef(null)
 
-  const _playUrl = useCallback((url, index) => {
+  const _playUrl = useCallback((url, index, stop) => {
     const audio = audioRef.current
     transitioningRef.current = true
+    stopAfterRef.current = !!stop
     audio.pause()
     audio.src = url
-    audio.onended = () => _advanceRef.current?.(index)
+    audio.onended = () => {
+      if (stopAfterRef.current) {
+        setState('IDLE')
+      } else {
+        _advanceRef.current?.(index)
+      }
+    }
     audio.onerror = () => _advanceRef.current?.(index)
     audio.play()
       .then(() => { transitioningRef.current = false })
@@ -102,8 +113,8 @@ export function usePlayer(bookId, paragraphs) {
       if (prefetchAbortRef.current) break
       if (ttsUrlCacheRef.current.has(i)) continue
       try {
-        const { url } = await requestTTS(bookId, i)
-        ttsUrlCacheRef.current.set(i, url)
+        const { url, stop } = await requestTTS(bookId, i)
+        ttsUrlCacheRef.current.set(i, { url, stop: !!stop })
         cachedWindowRef.current.add(i)
       } catch (_) {}
     }
@@ -126,19 +137,19 @@ export function usePlayer(bookId, paragraphs) {
     setCurrentIndex(index)
 
     try {
-      let url = ttsUrlCacheRef.current.get(index)
-      if (!url) {
+      let entry = ttsUrlCacheRef.current.get(index)
+      if (!entry) {
         const result = await requestTTS(bookId, index)
-        url = result.url
-        ttsUrlCacheRef.current.set(index, url)
+        entry = { url: result.url, stop: !!result.stop }
+        ttsUrlCacheRef.current.set(index, entry)
         cachedWindowRef.current.add(index)
       }
       setState('PLAYING')
-      _playUrl(url, index)
+      _playUrl(entry.url, index, entry.stop)
       _prefetch(index)
     } catch (_) {
-      setState('PLAYING_FALLBACK')
-      _playUrl('/audio/tts_failed.wav', index)
+      setState('PLAYING')
+      _playUrl('/audio/ding.wav', index, true)
     }
   }, [bookId, paragraphs, _playUrl, _prefetch])
 
@@ -153,6 +164,7 @@ export function usePlayer(bookId, paragraphs) {
 
   const seekTo = useCallback((index) => {
     prefetchAbortRef.current = true
+    stopAfterRef.current = false
     audioRef.current.pause()
     setState('IDLE')
     const toEvict = [...cachedWindowRef.current]
@@ -169,6 +181,17 @@ export function usePlayer(bookId, paragraphs) {
 
   const resume = useCallback(() => {
     if (currentIndex < 0) return
+    // Coming out of a ding-stopped paragraph → advance instead of replaying.
+    if (stopAfterRef.current) {
+      stopAfterRef.current = false
+      const next = currentIndex + 1
+      if (next >= paragraphs.length) {
+        setCurrentIndex(-1)
+        return
+      }
+      _startAtRef.current?.(next)
+      return
+    }
     const audio = audioRef.current
     if (!audio.src || audio.readyState === 0) {
       _startAtRef.current?.(currentIndex)
@@ -176,7 +199,7 @@ export function usePlayer(bookId, paragraphs) {
       audio.play().catch(() => {})
       setState('PLAYING')
     }
-  }, [currentIndex])
+  }, [currentIndex, paragraphs])
 
   const resumeFromBookmark = useCallback((index) => {
     if (index >= 0 && index < paragraphs.length) setCurrentIndex(index)

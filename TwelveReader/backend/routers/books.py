@@ -2,62 +2,74 @@ import os
 import secrets
 import shutil
 import asyncio
-import aiofiles
+from pathlib import Path
 from datetime import datetime, timezone
+import aiofiles
 from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse, Response as RawResponse
 
 import storage
-from epub_parser import convert_epub, load_md
+from conversion import ACCEPTED_EXTENSIONS, convert_file, extract_meta, load_md
 
 router = APIRouter(prefix="/api/books", tags=["books"])
 
 DATA_DIR = storage.DATA_DIR
+
+_CONTENT_TYPES = {
+    ".epub": "application/epub+zip",
+    ".pdf": "application/pdf",
+}
 
 
 def _book_dir(book_id: str) -> str:
     return os.path.join(DATA_DIR, book_id)
 
 
+def _source_path(book_id: str, ext: str) -> str:
+    return os.path.join(_book_dir(book_id), f"{book_id}{ext}")
+
+
 @router.post("")
 async def upload_book(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
-    if not file.filename.endswith(".epub"):
-        raise HTTPException(400, "Only .epub files are supported")
+    filename = file.filename or ""
+    ext = Path(filename).suffix.lower()
+    if ext not in ACCEPTED_EXTENSIONS:
+        raise HTTPException(
+            400,
+            f"Unsupported file type {ext!r}. Accepted: {sorted(ACCEPTED_EXTENSIONS)}",
+        )
 
     book_id = secrets.token_hex(8)
     book_dir = _book_dir(book_id)
     os.makedirs(book_dir, exist_ok=True)
-    epub_path = os.path.join(book_dir, f"{book_id}.epub")
+    src_path = _source_path(book_id, ext)
 
-    async with aiofiles.open(epub_path, "wb") as f:
-        content = await file.read()
-        await f.write(content)
+    async with aiofiles.open(src_path, "wb") as f:
+        await f.write(await file.read())
+
+    meta = extract_meta(src_path)
+    title = meta["title"] or Path(filename).stem
+    author = meta["author"]
 
     storage.add_book({
         "id": book_id,
-        "title": file.filename,
-        "author": "",
+        "title": title,
+        "author": author,
         "status": "PARSING",
+        "source_format": ext,
         "bookmark_paragraph_index": None,
         "created_at": datetime.now(timezone.utc).isoformat(),
     })
 
-    background_tasks.add_task(_parse_book, book_id, epub_path, book_dir)
+    background_tasks.add_task(_parse_book, book_id, src_path, book_dir)
     return {"book_id": book_id, "status": "PARSING"}
 
 
-async def _parse_book(book_id: str, epub_path: str, book_dir: str):
+async def _parse_book(book_id: str, src_path: str, book_dir: str):
     loop = asyncio.get_event_loop()
     try:
-        result = await loop.run_in_executor(
-            None, convert_epub, book_id, epub_path, book_dir
-        )
-        storage.update_book(
-            book_id,
-            title=result["meta"]["title"],
-            author=result["meta"]["author"],
-            status="READY",
-        )
+        await loop.run_in_executor(None, convert_file, book_id, src_path, book_dir)
+        storage.update_book(book_id, status="READY")
     except Exception as exc:
         print(f"[parse] FAILED book={book_id}: {exc}")
         storage.update_book(book_id, status="FAILED")
@@ -99,12 +111,16 @@ def get_asset(book_id: str, path: str):
     return FileResponse(file_path)
 
 
-@router.get("/{book_id}/epub")
-def get_epub_file(book_id: str):
-    epub_path = os.path.join(_book_dir(book_id), f"{book_id}.epub")
-    if not os.path.exists(epub_path):
-        raise HTTPException(404, "EPUB not found")
-    return FileResponse(epub_path, media_type="application/epub+zip")
+@router.get("/{book_id}/source")
+def get_source_file(book_id: str):
+    book = storage.get_book(book_id)
+    if not book:
+        raise HTTPException(404, "Book not found")
+    ext = book.get("source_format", ".epub")
+    path = _source_path(book_id, ext)
+    if not os.path.exists(path):
+        raise HTTPException(404, "Source file not found")
+    return FileResponse(path, media_type=_CONTENT_TYPES.get(ext, "application/octet-stream"))
 
 
 @router.delete("/{book_id}")
