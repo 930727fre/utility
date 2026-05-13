@@ -19,3 +19,72 @@ A collection of self-hosted tools, each containerized with Docker.
 2. Remember to register a subdomain in the Cloudflare tunnel dashboard for each new service
 3. Always prefix service names and container names with the service name (e.g. `flashcard-backend`, `flashcard-frontend`). Service names act as DNS hostnames on shared networks — generic names like `frontend` or `backend` will collide across services on `my_network`. Container names should match for clarity in `docker ps`.
 4. (Optional) To prevent iOS Safari from auto-zooming on input/textarea focus, add `maximum-scale=1` to the viewport meta tag: `<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">`
+
+## Design language
+
+All user-facing tools (marker-pipeline, transcribe, flashcard) share a single visual language. When adding a new tool, follow this so they look like siblings.
+
+### Palette
+
+Dark surfaces with warm cream text, one honey accent for the single primary action per screen. Everything else is grayscale.
+
+| Token | Hex | Use |
+|-------|-----|-----|
+| page bg | `#1c1c1e` | body background |
+| card | `#2c2c2e` | card / row backgrounds |
+| raised | `#3a3a3c` | borders, secondary button bg, snackbar |
+| text primary | `#e8e3d9` | titles, body text |
+| text secondary | `#aeaeb2` | author, captions, status |
+| text tertiary | `#636366` | placeholders, delete icon, disabled |
+| accent (honey) | `#c79968` | the one primary action per screen |
+
+Honey is rare on purpose — its appearance signals "do this." If two things on screen are honey, neither stands out.
+
+### Typography
+
+- Body: `-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`
+- Title / status / monospace: `ui-monospace, SFMono-Regular, Menlo, monospace`
+- Page titles use monospace, body text uses sans
+
+### Status & action glyphs
+
+State indicators are characters, not colored pills. They occupy the same slot per row, never both showing at once:
+
+| Glyph | State | Behavior |
+|-------|-------|----------|
+| `○` | working | CSS opacity pulse 0.35 ↔ 1.0, 1.4 s ease-in-out infinite |
+| `!` | failed | static, gray, `title` tooltip explains why |
+| `↓` | ready + downloadable | honey, clickable; replaces the status glyph entirely |
+| `✕` | delete | gray `#636366`, hover lifts to `#e8e3d9`; never the primary action |
+| `↻` | retry | honey when actionable |
+| `▸` | play | honey |
+| `+` | add | honey, used as the page-level CTA |
+
+If an action button is present (e.g. `↓` Download), it *replaces* the status indicator rather than appearing alongside it — the button's existence is itself the "ready" signal.
+
+### Button content rules
+
+| Pattern | Use |
+|---------|-----|
+| char only (`+`, `▸`, `↻`, `↓`) | when the glyph alone carries the meaning |
+| text only (`Submit`, `Update`, `Import N Cards`) | when there's no obvious glyph |
+| text only (`MP4`, `MP3`, `SRT`) | when the *label* itself is the disambiguator (e.g. file formats) |
+| char + text (`SHOW ANSWER (Space)`) | only when both add info — char for symbol, text for keyboard hint |
+
+Don't pair a char with a redundant description. `↓ Download` is just `↓`. `+ Add File` is just `+`. Always include a `title="…"` tooltip on bare-char buttons.
+
+### Shape
+
+| Property | Value |
+|----------|-------|
+| Card radius | `12px` (rounded but not pill) |
+| Button radius | `8px` |
+| Card shadow | `0 1px 4px rgba(0,0,0,0.3)` (subtle, not glow-y) |
+| Page width | `max-width: 720px`, centered |
+| Inline padding | `16px` mobile, `24px` desktop |
+
+### When to deviate
+
+- **Functional color**: if color is encoding information the user *needs* (not just decoration), keep it. We discussed this for flashcard's review buttons (Again/Hard/Good/Easy traditionally color-coded) and decided to drop them in favor of position-based muscle memory — but that was a deliberate UX call, not a default. If your tool legitimately needs more than one accent (e.g. a status dashboard surfacing severity), don't twist yourself in knots staying monochrome.
+- **Brand contexts**: when embedding inside something with its own identity (e.g. iframed into another tool), respect the host.
+- **Errors that need to scream**: a quiet `!` glyph is fine for "this conversion failed, retry it." A loud red banner is appropriate for "your data is being deleted, are you sure?" The bar for breaking the gray-only rule is "does the user *need* to be alarmed."

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import {
-  Container, TextInput, Stack, Paper, Text, Textarea,
+  TextInput, Stack, Paper, Text, Textarea,
   Button, ActionIcon, Group, Title, ThemeIcon, Box, ScrollArea
 } from '@mantine/core';
+import PageShell from '../components/PageShell';
 import { notifications } from '@mantine/notifications';
 import { IconArrowLeft, IconSearch, IconEdit, IconCheck } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
@@ -58,7 +59,7 @@ export default function EditPage() {
   const isDirty = selected && (sentence !== selected.sentence || note !== selected.note);
 
   return (
-    <Container size="xs" py="xl" px="md">
+    <PageShell size="xs">
       <Stack gap="lg">
         <Group justify="space-between">
           <Group gap="sm">
@@ -201,6 +202,6 @@ export default function EditPage() {
           </Paper>
         )}
       </Stack>
-    </Container>
+    </PageShell>
   );
 }

@@ -36,8 +36,10 @@ function App() {
       <Box
         style={{
           backgroundColor: '#1c1c1e',
-          minHeight: '100vh',
-          color: '#e8e3d9'
+          height: '100%',
+          color: '#e8e3d9',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         <HashRouter>

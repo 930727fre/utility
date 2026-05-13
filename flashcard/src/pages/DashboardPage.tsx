@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Container, Title, Text, Paper, Group, Stack,
-  Button, ThemeIcon, Skeleton, Box, Badge, Center, Progress
+  Title, Text, Paper, Group, Stack,
+  Button, ThemeIcon, Skeleton, Box, Badge, Progress
 } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
@@ -10,6 +10,7 @@ import {
   IconFlame, IconCards, IconPlus,
   IconPlayerPlay, IconUpload, IconList, IconCheck
 } from '@tabler/icons-react';
+import PageShell from '../components/PageShell';
 
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace';
 
@@ -53,27 +54,23 @@ export default function DashboardPage() {
 
   if (!stats) {
     return (
-      <Center h="100vh" bg="#1c1c1e">
-        <Container size="sm" maw={480} w="100%" px="md">
-          <Stack gap="md">
-            <Skeleton height={120} radius={14} animate />
-            <Skeleton height={90} radius={14} animate />
-            <Skeleton height={56} radius={14} animate />
-            <Group grow gap="sm">
-              <Skeleton height={48} radius={8} animate />
-              <Skeleton height={48} radius={8} animate />
-            </Group>
-            <Center mt="md">
-              <Stack gap={4} align="center">
-                <Text c="#aeaeb2" size="xs" fw={700} style={{ letterSpacing: '1.5px', fontFamily: MONO }}>
-                  SYNCING WITH BACKEND
-                </Text>
-                <Progress value={100} w={120} size="xs" radius="xl" animated color="gray" />
-              </Stack>
-            </Center>
+      <PageShell scroll="centered" maw={480}>
+        <Stack gap="md">
+          <Skeleton height={120} radius={14} animate />
+          <Skeleton height={90} radius={14} animate />
+          <Skeleton height={56} radius={14} animate />
+          <Group grow gap="sm">
+            <Skeleton height={48} radius={8} animate />
+            <Skeleton height={48} radius={8} animate />
+          </Group>
+          <Stack gap={4} align="center" mt="md">
+            <Text c="#aeaeb2" size="xs" fw={700} style={{ letterSpacing: '1.5px', fontFamily: MONO }}>
+              SYNCING WITH BACKEND
+            </Text>
+            <Progress value={100} w={120} size="xs" radius="xl" animated color="gray" />
           </Stack>
-        </Container>
-      </Center>
+        </Stack>
+      </PageShell>
     );
   }
 
@@ -90,16 +87,8 @@ export default function DashboardPage() {
   const buttonLabel = cfg.button ?? `Start ${phase === 'learning' ? 'Learning' : 'Review'} (${queueSize} cards)`;
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#1c1c1e',
-    }}>
-      <Container size="sm" maw={480} px="md" w="100%" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
-        <Stack gap="md">
+    <PageShell scroll="centered" maw={480}>
+      <Stack gap="md">
 
           {/* Streak */}
           <Paper radius={14} p="xl"
@@ -201,8 +190,7 @@ export default function DashboardPage() {
             </Button>
           </Group>
 
-        </Stack>
-      </Container>
-    </div>
+      </Stack>
+    </PageShell>
   );
 }

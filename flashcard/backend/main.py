@@ -228,7 +228,7 @@ def review_card(card_id: str, body: ReviewRequest):
     else:
         fsrs_card = FSRSCard(
             state=FSRSState(d['state']),
-            step=d['learning_steps'] or None,
+            step=d['learning_steps'],
             stability=d['stability'] or None,
             difficulty=d['difficulty'] or None,
             due=datetime.fromisoformat(d['due']) if d['due'] else None,

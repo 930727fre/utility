@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import {
-  Container, Textarea, Button, Title, Stack, Paper,
+  Textarea, Button, Title, Stack, Paper,
   ActionIcon, Group, Text, Alert, Code, Box, ThemeIcon, Badge, ScrollArea
 } from '@mantine/core';
+import PageShell from '../components/PageShell';
 import { notifications } from '@mantine/notifications';
 import { IconArrowLeft, IconDatabaseImport, IconAlertCircle, IconCheck, IconFileText, IconAlertTriangle } from '@tabler/icons-react';
 import { api } from '../api';
@@ -79,9 +80,8 @@ export default function BatchAddPage() {
   };
 
   return (
-    <Box style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: '#1c1c1e' }}>
-      <Container size="sm" maw={520} w="100%" py="xl" px="md">
-        <Stack gap="lg">
+    <PageShell maw={520}>
+      <Stack gap="lg">
           <Group justify="space-between">
             <Group gap="sm">
               <ActionIcon
@@ -219,8 +219,7 @@ export default function BatchAddPage() {
               </Button>
             </Stack>
           </Paper>
-        </Stack>
-      </Container>
-    </Box>
+      </Stack>
+    </PageShell>
   );
 }

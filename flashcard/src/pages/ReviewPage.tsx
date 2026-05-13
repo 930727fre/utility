@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import {
-  Container, Paper, Title, Text, Button, Group, Stack,
-  Progress, ActionIcon, ThemeIcon, SimpleGrid, Center, Box, Badge, Transition
+  Paper, Title, Text, Button, Group, Stack,
+  Progress, ActionIcon, ThemeIcon, SimpleGrid, Box, Badge, Transition
 } from '@mantine/core';
-import { IconArrowLeft, IconCheck, IconLamp, IconBulb, IconCopy } from '@tabler/icons-react';
+import PageShell from '../components/PageShell';
+import { IconArrowLeft, IconCheck, IconLamp, IconCopy } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
 import { api } from '../api';
@@ -84,48 +85,46 @@ export default function ReviewPage() {
 
   if (isLoading) {
     return (
-      <Center h="100vh" bg="#1c1c1e">
+      <PageShell scroll="centered">
         <Stack align="center" gap="xs">
           <Progress value={100} w={200} size="sm" radius="xl" animated color="gray" />
           <Text c="#aeaeb2" fw={600} size="xs" style={{ letterSpacing: 1.5, fontFamily: MONO }}>LOADING SESSION...</Text>
         </Stack>
-      </Center>
+      </PageShell>
     );
   }
 
   if (!isLoading && reviewQueue.length === 0) {
     return (
-      <Container size="xs" py={100}>
-        <Center>
-          <Paper radius={20} p={40} withBorder
-            style={{ background: '#2c2c2e', borderColor: '#3a3a3c', textAlign: 'center' }}>
-            <Stack align="center" gap="xl">
-              <ThemeIcon size={80} radius="xl" variant="filled" style={{ backgroundColor: '#3a3a3c', color: '#e8e3d9' }}>
-                <IconCheck size={40} />
-              </ThemeIcon>
-              <Box>
-                <Title order={2} c="#e8e3d9">Session Complete</Title>
-                <Text c="#aeaeb2" mt="sm">All cards have been reviewed.</Text>
-              </Box>
-              <Button
-                size="lg"
-                radius="md"
-                fullWidth
-                onClick={() => navigate('/')}
-                style={{ background: '#c79968', color: '#1c1c1e', border: 'none', fontWeight: 600 }}
-              >
-                Back to Dashboard
-              </Button>
-            </Stack>
-          </Paper>
-        </Center>
-      </Container>
+      <PageShell scroll="centered" size="xs">
+        <Paper radius={20} p={40} withBorder
+          style={{ background: '#2c2c2e', borderColor: '#3a3a3c', textAlign: 'center' }}>
+          <Stack align="center" gap="xl">
+            <ThemeIcon size={80} radius="xl" variant="filled" style={{ backgroundColor: '#3a3a3c', color: '#e8e3d9' }}>
+              <IconCheck size={40} />
+            </ThemeIcon>
+            <Box>
+              <Title order={2} c="#e8e3d9">Session Complete</Title>
+              <Text c="#aeaeb2" mt="sm">All cards have been reviewed.</Text>
+            </Box>
+            <Button
+              size="lg"
+              radius="md"
+              fullWidth
+              onClick={() => navigate('/')}
+              style={{ background: '#c79968', color: '#1c1c1e', border: 'none', fontWeight: 600 }}
+            >
+              Back to Dashboard
+            </Button>
+          </Stack>
+        </Paper>
+      </PageShell>
     );
   }
 
   return (
-    <Container size="sm" py="xl" px="md" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
-      <Stack gap="lg">
+    <PageShell scroll="locked">
+      <Stack gap="lg" style={{ flex: 1, minHeight: 0 }}>
         <Group justify="space-between">
           <ActionIcon variant="subtle" onClick={() => navigate('/')} size="xl" c="#aeaeb2">
             <IconArrowLeft size={28} />
@@ -145,22 +144,32 @@ export default function ReviewPage() {
           styles={{ root: { backgroundColor: '#2c2c2e' } }}
         />
 
+        <Box
+          onClick={!isFlipped ? () => setIsFlipped(true) : undefined}
+          style={{
+            flex: 1,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--mantine-spacing-lg)',
+            cursor: !isFlipped ? 'pointer' : 'default',
+          }}
+        >
         <Transition mounted={!!currentCard} transition="slide-up" duration={400}>
           {(styles) => (
             <Paper
               p={0}
               radius={24}
-              onClick={() => !isFlipped && setIsFlipped(true)}
               style={{
                 ...styles,
-                minHeight: 400,
+                flex: 1,
+                minHeight: 0,
                 display: 'flex',
                 flexDirection: 'column',
-                cursor: isFlipped ? 'default' : 'pointer',
                 background: '#2c2c2e',
                 border: '1px solid #3a3a3c',
                 boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-                overflow: 'hidden',
+                overflowY: 'auto',
                 position: 'relative',
               }}
             >
@@ -182,15 +191,6 @@ export default function ReviewPage() {
                   </Text>
                 )}
 
-                {!isFlipped && (
-                  <Box mt={50} style={{ opacity: 0.4 }}>
-                    <Group gap="xs" justify="center">
-                      <IconBulb size={16} />
-                      <Text size="xs" fw={700} style={{ letterSpacing: 2, fontFamily: MONO }}>TAP TO REVEAL</Text>
-                    </Group>
-                  </Box>
-                )}
-
                 {isFlipped && (
                   <Box mt={40} pt={30} style={{ borderTop: '1px solid #3a3a3c', width: '100%' }}>
                     <Group gap="xs" justify="center" mb="xs" opacity={0.5}>
@@ -200,6 +200,23 @@ export default function ReviewPage() {
                     <Text ta="center" size="xl" fw={600} c="#e8e3d9" style={{ wordBreak: 'break-word' }}>
                       {currentCard?.note || "No notes provided."}
                     </Text>
+                    <Group justify="center" mt="lg">
+                      <ActionIcon
+                        variant="subtle"
+                        size="lg"
+                        radius="xl"
+                        title={copied ? 'Prompt copied' : 'Copy prompt'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(`幫我造 ${currentCard?.word} 的例句`);
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
+                        }}
+                        style={{ color: '#aeaeb2', border: '1px solid #3a3a3c' }}
+                      >
+                        {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                      </ActionIcon>
+                    </Group>
                   </Box>
                 )}
               </Stack>
@@ -207,57 +224,39 @@ export default function ReviewPage() {
           )}
         </Transition>
 
-        {isFlipped && (
-          <Group justify="center">
+        <SimpleGrid
+          cols={{ base: 2, sm: 4 }}
+          spacing="sm"
+          style={{
+            visibility: isFlipped ? 'visible' : 'hidden',
+            pointerEvents: isFlipped ? 'auto' : 'none',
+          }}
+          aria-hidden={!isFlipped}
+        >
+          {RATINGS.map(({ label, value }, i) => (
             <Button
-              variant="subtle"
-              size="sm"
-              radius="xl"
-              leftSection={copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
-              onClick={() => {
-                navigator.clipboard.writeText(`幫我造 ${currentCard?.word} 的例句`);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
+              key={label}
+              variant="filled"
+              size="xl"
+              radius="md"
+              onClick={() => handleRate(value)}
+              tabIndex={isFlipped ? 0 : -1}
+              styles={{
+                root: {
+                  backgroundColor: '#2c2c2e',
+                  border: '1px solid #3a3a3c',
+                  height: 70,
+                },
+                inner: { flexDirection: 'column', gap: 2 },
               }}
-              style={{ color: '#aeaeb2', border: '1px solid #3a3a3c' }}
             >
-              {copied ? 'Prompt copied!' : 'Copy prompt'}
+              <Text fw={800} size="sm" c="#e8e3d9">{label}</Text>
+              <Text size="xs" c="#aeaeb2" fw={500} style={{ fontFamily: MONO }}>[{i + 1}]</Text>
             </Button>
-          </Group>
-        )}
-
-        {isFlipped ? (
-          <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
-            {RATINGS.map(({ label, value }, i) => (
-              <Button
-                key={label}
-                variant="filled"
-                size="xl"
-                radius="md"
-                onClick={() => handleRate(value)}
-                styles={{
-                  root: {
-                    backgroundColor: '#2c2c2e',
-                    border: '1px solid #3a3a3c',
-                    height: 70,
-                  },
-                  inner: { flexDirection: 'column', gap: 2 },
-                }}
-              >
-                <Text fw={800} size="sm" c="#e8e3d9">{label}</Text>
-                <Text size="xs" c="#aeaeb2" fw={500} style={{ fontFamily: MONO }}>[{i + 1}]</Text>
-              </Button>
-            ))}
-          </SimpleGrid>
-        ) : (
-          <Button
-            fullWidth size="xl" radius="md" onClick={() => setIsFlipped(true)}
-            style={{ height: 70, fontSize: 18, background: '#c79968', color: '#1c1c1e', border: 'none', fontWeight: 700 }}
-          >
-            SHOW ANSWER (Space)
-          </Button>
-        )}
+          ))}
+        </SimpleGrid>
+        </Box>
       </Stack>
-    </Container>
+    </PageShell>
   );
 }
