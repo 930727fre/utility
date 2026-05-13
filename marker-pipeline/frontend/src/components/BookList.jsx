@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { listBooks, uploadBook, deleteBook, getBook, zipUrl } from '../api'
 
-const STATUS_LABEL = { PARSING: 'Converting…', READY: 'Ready', FAILED: 'Failed' }
-const STATUS_COLOR = { PARSING: '#f0a500', READY: '#30d158', FAILED: '#ff453a' }
+const STATUS_TITLE = { PARSING: 'Converting', READY: 'Ready', FAILED: 'Failed' }
 
 export default function BookList() {
   const [books, setBooks] = useState([])
@@ -61,10 +60,14 @@ export default function BookList() {
 
   return (
     <div style={styles.page}>
+      <style>{`
+        @keyframes statusPulse { 0%,100% { opacity: 0.35 } 50% { opacity: 1 } }
+        .status-pulse { animation: statusPulse 1.4s ease-in-out infinite; }
+      `}</style>
       <header style={styles.header}>
         <h1 style={styles.title}>marker-pipeline</h1>
-        <button style={styles.uploadBtn} onClick={() => fileRef.current.click()} disabled={uploading}>
-          {uploading ? 'Uploading…' : '+ Add File'}
+        <button style={styles.uploadBtn} onClick={() => fileRef.current.click()} disabled={uploading} title="Add file">
+          {uploading ? '…' : '+'}
         </button>
         <input ref={fileRef} type="file" accept=".epub,.pdf" style={{ display: 'none' }} onChange={handleUpload} />
       </header>
@@ -80,19 +83,19 @@ export default function BookList() {
               <div style={styles.cardInfo}>
                 <div style={styles.bookTitle}>{book.title}</div>
                 {book.author && <div style={styles.bookAuthor}>{book.author}</div>}
-                <div style={{ ...styles.status, color: STATUS_COLOR[book.status] }}>
-                  {STATUS_LABEL[book.status] || book.status}
-                </div>
-                {book.status === 'FAILED' && (
-                  <div style={styles.failMsg}>Conversion failed. Try re-uploading.</div>
-                )}
               </div>
             </div>
             <div style={styles.actions}>
+              {book.status === 'PARSING' && (
+                <span className="status-pulse" style={styles.statusGlyph} title={STATUS_TITLE.PARSING}>○</span>
+              )}
               {book.status === 'READY' && (
-                <a href={zipUrl(book.id)} style={styles.downloadBtn} download>
-                  ↓ Download
+                <a href={zipUrl(book.id)} style={styles.downloadBtn} download title={STATUS_TITLE.READY}>
+                  ↓
                 </a>
+              )}
+              {book.status === 'FAILED' && (
+                <span style={styles.statusGlyph} title={STATUS_TITLE.FAILED}>!</span>
               )}
               <button style={styles.deleteBtn} onClick={() => handleDelete(book.id)}>✕</button>
             </div>
@@ -108,8 +111,9 @@ const styles = {
   header: { display: 'flex', alignItems: 'center', marginBottom: 28 },
   title: { flex: 1, fontSize: 24, fontWeight: 700, letterSpacing: -0.5, color: '#e8e3d9', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' },
   uploadBtn: {
-    background: '#3a3a3c', color: '#e8e3d9', border: 'none',
-    borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontSize: 14,
+    background: '#c79968', color: '#1c1c1e', border: 'none',
+    borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 22, fontWeight: 700,
+    lineHeight: 1, minWidth: 40,
   },
   grid: { display: 'flex', flexDirection: 'column', gap: 12 },
   empty: { color: '#636366', textAlign: 'center', marginTop: 60 },
@@ -124,13 +128,14 @@ const styles = {
   cardInfo: { flex: 1, minWidth: 0 },
   bookTitle: { fontSize: 16, fontWeight: 600, marginBottom: 2, color: '#e8e3d9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   bookAuthor: { fontSize: 13, color: '#aeaeb2', marginBottom: 4 },
-  status: { fontSize: 12, fontWeight: 600 },
-  failMsg: { fontSize: 11, color: '#ff453a', marginTop: 2 },
-  actions: { display: 'flex', alignItems: 'center', gap: 4, paddingRight: 12, flexShrink: 0 },
+  actions: { display: 'flex', alignItems: 'center', gap: 8, paddingRight: 16, flexShrink: 0 },
+  statusGlyph: {
+    color: '#636366', fontSize: 20, fontWeight: 700, lineHeight: 1,
+    padding: '4px 8px', cursor: 'default', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+  },
   downloadBtn: {
-    background: '#0a84ff', color: '#fff', border: 'none',
-    borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13,
-    fontWeight: 600, textDecoration: 'none',
+    color: '#c79968', fontSize: 20, fontWeight: 700, lineHeight: 1,
+    textDecoration: 'none', cursor: 'pointer', padding: '4px 8px',
   },
   deleteBtn: {
     background: 'none', border: 'none', color: '#636366',

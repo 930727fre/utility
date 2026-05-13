@@ -9,6 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import type { Card } from '../types';
 
+const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace';
+
 export default function EditPage() {
   const navigate = useNavigate();
 
@@ -27,7 +29,7 @@ export default function EditPage() {
       const results = await api.searchCards(q);
       setCandidates(results);
     } catch {
-      notifications.show({ title: 'Search failed', message: 'Check network connection', color: 'red' });
+      notifications.show({ title: 'Search failed', message: 'Check network connection' });
     }
   };
 
@@ -45,9 +47,9 @@ export default function EditPage() {
     try {
       await api.updateCard(selected.id, { sentence, note });
       setSelected({ ...selected, sentence, note });
-      notifications.show({ message: `${selected.word} updated`, color: 'green', icon: <IconCheck size={14} /> });
+      notifications.show({ message: `${selected.word} updated`, icon: <IconCheck size={14} /> });
     } catch {
-      notifications.show({ title: 'Update failed', message: 'Check network connection', color: 'red' });
+      notifications.show({ title: 'Update failed', message: 'Check network connection' });
     } finally {
       setSaving(false);
     }
@@ -61,18 +63,14 @@ export default function EditPage() {
         <Group justify="space-between">
           <Group gap="sm">
             <ActionIcon
-              variant="subtle"
-              onClick={() => navigate('/')}
-              size="xl"
-              radius="md"
-              c="dimmed"
-              style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+              variant="subtle" onClick={() => navigate('/')} size="xl" radius="md" c="#aeaeb2"
+              style={{ border: '1px solid #3a3a3c' }}
             >
               <IconArrowLeft size={24} />
             </ActionIcon>
-            <Title order={2} c="#e8eaf0" style={{ letterSpacing: '-0.5px' }}>Edit</Title>
+            <Title order={2} c="#e8e3d9" style={{ letterSpacing: '-0.5px' }}>Edit</Title>
           </Group>
-          <ThemeIcon variant="light" color="blue" size="lg" radius="md">
+          <ThemeIcon variant="filled" size="lg" radius="md" style={{ backgroundColor: '#3a3a3c', color: '#e8e3d9' }}>
             <IconEdit size={20} />
           </ThemeIcon>
         </Group>
@@ -86,10 +84,10 @@ export default function EditPage() {
             onChange={e => handleSearch(e.target.value)}
             styles={{
               input: {
-                backgroundColor: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: '#e8eaf0',
-              }
+                backgroundColor: '#2c2c2e',
+                border: '1px solid #3a3a3c',
+                color: '#e8e3d9',
+              },
             }}
           />
 
@@ -101,8 +99,8 @@ export default function EditPage() {
                 left: 0,
                 right: 0,
                 zIndex: 100,
-                background: '#161b2c',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: '#2c2c2e',
+                border: '1px solid #3a3a3c',
                 borderTop: 'none',
                 borderRadius: '0 0 8px 8px',
                 overflow: 'hidden',
@@ -115,15 +113,15 @@ export default function EditPage() {
                     px="md"
                     py="md"
                     onClick={() => handleSelect(card)}
-                    style={{ cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                    style={{ cursor: 'pointer', borderBottom: '1px solid #3a3a3c' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#3a3a3c')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
-                    <Text size="sm" c="#e8eaf0" fw={600} style={{ fontFamily: 'JetBrains Mono' }}>
+                    <Text size="sm" c="#e8e3d9" fw={600} style={{ fontFamily: MONO }}>
                       {card.word}
                     </Text>
                     {card.note && (
-                      <Text size="xs" c="dimmed" truncate>{card.note}</Text>
+                      <Text size="xs" c="#aeaeb2" truncate>{card.note}</Text>
                     )}
                   </Box>
                 ))}
@@ -138,17 +136,17 @@ export default function EditPage() {
             p="lg"
             radius={16}
             style={{
-              background: 'linear-gradient(145deg, #161b2c 0%, #0d111d 100%)',
-              border: '1px solid rgba(74,143,255,0.3)',
+              background: '#2c2c2e',
+              border: '1px solid #3a3a3c',
             }}
           >
             <Stack gap="md">
-              <Text fw={700} size="xl" c="#e8eaf0" style={{ fontFamily: 'JetBrains Mono' }}>
+              <Text fw={700} size="xl" c="#e8e3d9" style={{ fontFamily: MONO }}>
                 {selected.word}
               </Text>
 
               <Box>
-                <Text size="xs" c="dimmed" mb={4}>Sentence</Text>
+                <Text size="xs" c="#aeaeb2" mb={4}>Sentence</Text>
                 <Textarea
                   autosize
                   minRows={2}
@@ -156,17 +154,17 @@ export default function EditPage() {
                   onChange={e => setSentence(e.target.value)}
                   styles={{
                     input: {
-                      backgroundColor: 'rgba(0,0,0,0.2)',
-                      border: '1px solid rgba(255,255,255,0.06)',
-                      color: '#e8eaf0',
+                      backgroundColor: '#1c1c1e',
+                      border: '1px solid #3a3a3c',
+                      color: '#e8e3d9',
                       fontSize: 14,
-                    }
+                    },
                   }}
                 />
               </Box>
 
               <Box>
-                <Text size="xs" c="dimmed" mb={4}>Note</Text>
+                <Text size="xs" c="#aeaeb2" mb={4}>Note</Text>
                 <Textarea
                   autosize
                   minRows={2}
@@ -174,11 +172,11 @@ export default function EditPage() {
                   onChange={e => setNote(e.target.value)}
                   styles={{
                     input: {
-                      backgroundColor: 'rgba(0,0,0,0.2)',
-                      border: '1px solid rgba(255,255,255,0.06)',
-                      color: '#e8eaf0',
+                      backgroundColor: '#1c1c1e',
+                      border: '1px solid #3a3a3c',
+                      color: '#e8e3d9',
                       fontSize: 14,
-                    }
+                    },
                   }}
                 />
               </Box>
@@ -191,7 +189,10 @@ export default function EditPage() {
                 loading={saving}
                 onClick={handleUpdate}
                 style={{
-                  background: isDirty ? 'linear-gradient(135deg, #1a4fc7, #2d7aff)' : undefined,
+                  background: isDirty ? '#c79968' : '#2c2c2e',
+                  color: isDirty ? '#1c1c1e' : '#636366',
+                  border: isDirty ? 'none' : '1px solid #3a3a3c',
+                  fontWeight: 600,
                 }}
               >
                 Update

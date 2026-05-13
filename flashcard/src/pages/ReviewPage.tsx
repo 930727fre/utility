@@ -10,11 +10,13 @@ import { notifications } from '@mantine/notifications';
 import { api } from '../api';
 import type { Card } from '../types';
 
+const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace';
+
 const RATINGS = [
-  { label: 'Again', value: 1, color: '#ff6b6b', bg: 'rgba(255,107,107,0.1)' },
-  { label: 'Hard',  value: 2, color: '#ffd43b', bg: 'rgba(255,212,59,0.1)'  },
-  { label: 'Good',  value: 3, color: '#51cf66', bg: 'rgba(81,207,102,0.1)'  },
-  { label: 'Easy',  value: 4, color: '#339af0', bg: 'rgba(51,154,240,0.1)'  },
+  { label: 'Again', value: 1 },
+  { label: 'Hard',  value: 2 },
+  { label: 'Good',  value: 3 },
+  { label: 'Easy',  value: 4 },
 ] as const;
 
 export default function ReviewPage() {
@@ -29,7 +31,7 @@ export default function ReviewPage() {
       queryClient.invalidateQueries({ queryKey: ['queue'] });
     },
     onError: () => {
-      notifications.show({ title: 'Sync failed', message: 'Rating could not be saved. The card will reappear next session.', color: 'red' });
+      notifications.show({ title: 'Sync failed', message: 'Rating could not be saved. The card will reappear next session.' });
     },
   });
 
@@ -82,10 +84,10 @@ export default function ReviewPage() {
 
   if (isLoading) {
     return (
-      <Center h="100vh" bg="#0a0c14">
+      <Center h="100vh" bg="#1c1c1e">
         <Stack align="center" gap="xs">
-          <Progress value={100} w={200} size="sm" radius="xl" animated color="blue" />
-          <Text c="dimmed" fw={600} size="xs" style={{ letterSpacing: 1.5 }}>LOADING SESSION...</Text>
+          <Progress value={100} w={200} size="sm" radius="xl" animated color="gray" />
+          <Text c="#aeaeb2" fw={600} size="xs" style={{ letterSpacing: 1.5, fontFamily: MONO }}>LOADING SESSION...</Text>
         </Stack>
       </Center>
     );
@@ -95,21 +97,22 @@ export default function ReviewPage() {
     return (
       <Container size="xs" py={100}>
         <Center>
-          <Paper radius={20} p={40} withBorder bg="#0e1f16" style={{ borderColor: '#1e5c36', textAlign: 'center' }}>
+          <Paper radius={20} p={40} withBorder
+            style={{ background: '#2c2c2e', borderColor: '#3a3a3c', textAlign: 'center' }}>
             <Stack align="center" gap="xl">
-              <ThemeIcon size={80} radius="xl" color="green" variant="light">
+              <ThemeIcon size={80} radius="xl" variant="filled" style={{ backgroundColor: '#3a3a3c', color: '#e8e3d9' }}>
                 <IconCheck size={40} />
               </ThemeIcon>
               <Box>
-                <Title order={2} c="#e8eaf0">Session Complete!</Title>
-                <Text c="dimmed" mt="sm">Great job! All cards have been reviewed. 🔥</Text>
+                <Title order={2} c="#e8e3d9">Session Complete</Title>
+                <Text c="#aeaeb2" mt="sm">All cards have been reviewed.</Text>
               </Box>
               <Button
                 size="lg"
                 radius="md"
                 fullWidth
                 onClick={() => navigate('/')}
-                style={{ background: 'linear-gradient(135deg, #1a3d28, #2a5c3e)', border: 'none' }}
+                style={{ background: '#c79968', color: '#1c1c1e', border: 'none', fontWeight: 600 }}
               >
                 Back to Dashboard
               </Button>
@@ -120,19 +123,16 @@ export default function ReviewPage() {
     );
   }
 
-  const themeColor = currentCard?.state === 0 ? '#4dbb7a' : '#4a8fff';
-  const themeBg = currentCard?.state === 0 ? 'rgba(77, 187, 122, 0.05)' : 'rgba(74, 143, 255, 0.05)';
-
   return (
     <Container size="sm" py="xl" px="md" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
       <Stack gap="lg">
         <Group justify="space-between">
-          <ActionIcon variant="subtle" onClick={() => navigate('/')} size="xl" c="dimmed">
+          <ActionIcon variant="subtle" onClick={() => navigate('/')} size="xl" c="#aeaeb2">
             <IconArrowLeft size={28} />
           </ActionIcon>
           <Box style={{ textAlign: 'right' }}>
-            <Text fw={700} c="dimmed" style={{ fontFamily: 'JetBrains Mono', fontSize: 18 }}>
-              <span style={{ color: themeColor }}>{reviewed + 1}</span> / {totalCount}
+            <Text fw={700} c="#aeaeb2" style={{ fontFamily: MONO, fontSize: 18 }}>
+              <span style={{ color: '#e8e3d9' }}>{reviewed + 1}</span> / {totalCount}
             </Text>
           </Box>
         </Group>
@@ -141,8 +141,8 @@ export default function ReviewPage() {
           value={(reviewed / totalCount) * 100}
           size="xs"
           radius="xl"
-          color={currentCard?.state === 0 ? 'green' : 'blue'}
-          styles={{ root: { backgroundColor: '#1a1d2e' } }}
+          color="gray"
+          styles={{ root: { backgroundColor: '#2c2c2e' } }}
         />
 
         <Transition mounted={!!currentCard} transition="slide-up" duration={400}>
@@ -157,24 +157,27 @@ export default function ReviewPage() {
                 display: 'flex',
                 flexDirection: 'column',
                 cursor: isFlipped ? 'default' : 'pointer',
-                background: `linear-gradient(145deg, #161b2c 0%, #0d111d 100%)`,
-                border: `1px solid ${themeColor}44`,
-                boxShadow: `0 20px 40px rgba(0,0,0,0.4), 0 0 20px ${themeBg}`,
+                background: '#2c2c2e',
+                border: '1px solid #3a3a3c',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
                 overflow: 'hidden',
-                position: 'relative'
+                position: 'relative',
               }}
             >
               <Stack align="center" gap={0} p={{ base: 'lg', sm: 40 }} style={{ flex: 1, justifyContent: 'center' }}>
-                <Badge variant="filled" size="sm" mb={30} style={{ backgroundColor: themeColor, color: '#000' }}>
+                <Badge
+                  variant="filled" size="sm" mb={30}
+                  style={{ backgroundColor: '#3a3a3c', color: '#e8e3d9', fontFamily: MONO }}
+                >
                   {currentCard?.state === 0 ? 'NEW CARD' : 'REVIEW'}
                 </Badge>
 
-                <Title order={1} ta="center" style={{ fontSize: 'clamp(2rem, 8vw, 3.5rem)', color: '#fff', letterSpacing: '-0.5px', lineHeight: 1.2 }}>
+                <Title order={1} ta="center" style={{ fontSize: 'clamp(2rem, 8vw, 3.5rem)', color: '#e8e3d9', letterSpacing: '-0.5px', lineHeight: 1.2 }}>
                   {currentCard?.word}
                 </Title>
 
                 {currentCard?.sentence && (
-                  <Text c="dimmed" ta="center" size="lg" mt="xl" fs="italic" style={{ maxWidth: '90%' }}>
+                  <Text c="#aeaeb2" ta="center" size="lg" mt="xl" fs="italic" style={{ maxWidth: '90%' }}>
                     "{currentCard.sentence}"
                   </Text>
                 )}
@@ -183,18 +186,18 @@ export default function ReviewPage() {
                   <Box mt={50} style={{ opacity: 0.4 }}>
                     <Group gap="xs" justify="center">
                       <IconBulb size={16} />
-                      <Text size="xs" fw={700} style={{ letterSpacing: 2 }}>TAP TO REVEAL</Text>
+                      <Text size="xs" fw={700} style={{ letterSpacing: 2, fontFamily: MONO }}>TAP TO REVEAL</Text>
                     </Group>
                   </Box>
                 )}
 
                 {isFlipped && (
-                  <Box mt={40} pt={30} style={{ borderTop: '1px solid rgba(255,255,255,0.08)', width: '100%' }}>
+                  <Box mt={40} pt={30} style={{ borderTop: '1px solid #3a3a3c', width: '100%' }}>
                     <Group gap="xs" justify="center" mb="xs" opacity={0.5}>
                       <IconLamp size={14} />
-                      <Text size="xs" fw={800} tt="uppercase">Definition / Note</Text>
+                      <Text size="xs" fw={800} tt="uppercase" style={{ fontFamily: MONO }}>Definition / Note</Text>
                     </Group>
-                    <Text ta="center" size="xl" fw={600} c="#e8eaf0" style={{ wordBreak: 'break-word' }}>
+                    <Text ta="center" size="xl" fw={600} c="#e8e3d9" style={{ wordBreak: 'break-word' }}>
                       {currentCard?.note || "No notes provided."}
                     </Text>
                   </Box>
@@ -216,7 +219,7 @@ export default function ReviewPage() {
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
               }}
-              style={{ color: copied ? '#51cf66' : '#888', border: '1px solid rgba(255,255,255,0.1)' }}
+              style={{ color: '#aeaeb2', border: '1px solid #3a3a3c' }}
             >
               {copied ? 'Prompt copied!' : 'Copy prompt'}
             </Button>
@@ -225,28 +228,31 @@ export default function ReviewPage() {
 
         {isFlipped ? (
           <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
-            {RATINGS.map(({ label, value, color, bg }, i) => (
+            {RATINGS.map(({ label, value }, i) => (
               <Button
                 key={label}
-                variant="light"
-                color="gray"
+                variant="filled"
                 size="xl"
                 radius="md"
                 onClick={() => handleRate(value)}
                 styles={{
-                  root: { backgroundColor: bg, border: `1px solid ${color}33`, height: 70 },
-                  inner: { flexDirection: 'column', gap: 2 }
+                  root: {
+                    backgroundColor: '#2c2c2e',
+                    border: '1px solid #3a3a3c',
+                    height: 70,
+                  },
+                  inner: { flexDirection: 'column', gap: 2 },
                 }}
               >
-                <Text fw={800} size="sm" style={{ color }}>{label}</Text>
-                <Text size="xs" c="dimmed" fw={500}>[{i + 1}]</Text>
+                <Text fw={800} size="sm" c="#e8e3d9">{label}</Text>
+                <Text size="xs" c="#aeaeb2" fw={500} style={{ fontFamily: MONO }}>[{i + 1}]</Text>
               </Button>
             ))}
           </SimpleGrid>
         ) : (
           <Button
             fullWidth size="xl" radius="md" onClick={() => setIsFlipped(true)}
-            style={{ height: 70, fontSize: 18, background: 'linear-gradient(135deg, #1a4fc7, #2d7aff)', boxShadow: '0 8px 20px rgba(26, 79, 199, 0.3)' }}
+            style={{ height: 70, fontSize: 18, background: '#c79968', color: '#1c1c1e', border: 'none', fontWeight: 700 }}
           >
             SHOW ANSWER (Space)
           </Button>

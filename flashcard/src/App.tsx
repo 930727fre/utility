@@ -35,9 +35,9 @@ function App() {
       <Notifications />
       <Box
         style={{
-          backgroundColor: '#0a0c14',
+          backgroundColor: '#1c1c1e',
           minHeight: '100vh',
-          color: '#e8eaf0'
+          color: '#e8e3d9'
         }}
       >
         <HashRouter>

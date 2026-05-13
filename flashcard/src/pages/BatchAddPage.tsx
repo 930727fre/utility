@@ -10,6 +10,8 @@ import { nanoid } from 'nanoid';
 import { useNavigate } from 'react-router-dom';
 import type { Card } from '../types';
 
+const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace';
+
 interface ParsedLine {
   raw: string;
   word: string;
@@ -65,53 +67,53 @@ export default function BatchAddPage() {
       notifications.show({
         title: 'Import Successful',
         message: `Successfully imported ${newCards.length} cards`,
-        color: 'green',
         icon: <IconCheck size={16} />,
       });
       navigate('/');
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unknown error';
-      notifications.show({ title: 'Import Failed', message: msg, color: 'red' });
+      notifications.show({ title: 'Import Failed', message: msg });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Box style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0c14' }}>
+    <Box style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: '#1c1c1e' }}>
       <Container size="sm" maw={520} w="100%" py="xl" px="md">
         <Stack gap="lg">
           <Group justify="space-between">
             <Group gap="sm">
               <ActionIcon
-                variant="subtle" onClick={() => navigate('/')} size="xl" radius="md" c="dimmed"
-                style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+                variant="subtle" onClick={() => navigate('/')} size="xl" radius="md" c="#aeaeb2"
+                style={{ border: '1px solid #3a3a3c' }}
               >
                 <IconArrowLeft size={24} />
               </ActionIcon>
-              <Title order={2} c="#e8eaf0" style={{ letterSpacing: '-0.5px' }}>Batch Import</Title>
+              <Title order={2} c="#e8e3d9" style={{ letterSpacing: '-0.5px' }}>Batch Import</Title>
             </Group>
-            <ThemeIcon variant="light" color="violet" size="lg" radius="md">
+            <ThemeIcon variant="filled" size="lg" radius="md" style={{ backgroundColor: '#3a3a3c', color: '#e8e3d9' }}>
               <IconFileText size={20} />
             </ThemeIcon>
           </Group>
 
           <Alert
-            variant="light" color="violet" radius="lg" icon={<IconAlertCircle size={20} />}
+            variant="light" radius="lg" icon={<IconAlertCircle size={20} />}
             styles={{
-              root: { backgroundColor: 'rgba(121, 80, 242, 0.05)', border: '1px solid rgba(121, 80, 242, 0.2)' },
-              title: { fontWeight: 700 },
+              root: { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c' },
+              title: { fontWeight: 700, color: '#e8e3d9' },
+              icon: { color: '#aeaeb2' },
             }}
           >
-            <Text size="xs" c="dimmed" mb={4} fw={600}>Format (one per line):</Text>
-            <Code block style={{ backgroundColor: 'rgba(0,0,0,0.3)', color: '#a5d8ff', fontSize: '11px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <Text size="xs" c="#aeaeb2" mb={4} fw={600}>Format (one per line):</Text>
+            <Code block style={{ backgroundColor: '#1c1c1e', color: '#e8e3d9', fontSize: '11px', border: '1px solid #3a3a3c', fontFamily: MONO }}>
               word::note::sentence
             </Code>
           </Alert>
 
           <Paper
             radius={20} p="xl"
-            style={{ background: 'linear-gradient(145deg, #161b2c 0%, #0d111d 100%)', border: '1px solid rgba(121, 80, 242, 0.3)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}
+            style={{ background: '#2c2c2e', border: '1px solid #3a3a3c', boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}
           >
             <Stack gap="md">
               <Textarea
@@ -122,15 +124,15 @@ export default function BatchAddPage() {
                 onChange={(e) => setContent(e.target.value)}
                 styles={{
                   input: {
-                    fontFamily: 'JetBrains Mono, monospace',
-                    backgroundColor: 'rgba(0,0,0,0.2)',
-                    color: '#e8eaf0',
-                    border: '1px solid rgba(255,255,255,0.05)',
+                    fontFamily: MONO,
+                    backgroundColor: '#1c1c1e',
+                    color: '#e8e3d9',
+                    border: '1px solid #3a3a3c',
                     padding: '16px',
                     fontSize: '14px',
                     borderRadius: '12px',
                   },
-                  label: { color: '#e8eaf0', marginBottom: '8px', fontWeight: 600 },
+                  label: { color: '#e8e3d9', marginBottom: '8px', fontWeight: 600 },
                 }}
               />
 
@@ -139,14 +141,20 @@ export default function BatchAddPage() {
                 <Box>
                   <Group justify="space-between" mb="xs">
                     <Group gap="xs">
-                      <Badge color="violet" variant="light" size="sm">{validCount} cards</Badge>
+                      <Badge variant="light" size="sm" style={{ background: '#3a3a3c', color: '#e8e3d9', fontFamily: MONO }}>
+                        {validCount} cards
+                      </Badge>
                       {malformedCount > 0 && (
-                        <Badge color="orange" variant="light" size="sm" leftSection={<IconAlertTriangle size={10} />}>
+                        <Badge
+                          variant="light" size="sm"
+                          leftSection={<IconAlertTriangle size={10} />}
+                          style={{ background: '#3a3a3c', color: '#aeaeb2', fontFamily: MONO }}
+                        >
                           {malformedCount} malformed
                         </Badge>
                       )}
                     </Group>
-                    <Text size="xs" c="dimmed">Separator: ::</Text>
+                    <Text size="xs" c="#aeaeb2">Separator: ::</Text>
                   </Group>
 
                   <ScrollArea h={Math.min(parsedLines.length * 44, 220)} type="auto">
@@ -157,30 +165,30 @@ export default function BatchAddPage() {
                           px="sm" py={6}
                           style={{
                             borderRadius: 8,
-                            background: line.malformed ? 'rgba(255, 140, 0, 0.08)' : 'rgba(255,255,255,0.03)',
-                            border: `1px solid ${line.malformed ? 'rgba(255,140,0,0.25)' : 'rgba(255,255,255,0.05)'}`,
+                            background: line.malformed ? '#1c1c1e' : 'transparent',
+                            border: `1px solid ${line.malformed ? '#aeaeb2' : '#3a3a3c'}`,
                           }}
                         >
                           {line.malformed ? (
                             <Group gap="xs" wrap="nowrap">
-                              <IconAlertTriangle size={13} color="#ff8c00" style={{ flexShrink: 0 }} />
-                              <Text size="xs" c="orange.4" style={{ fontFamily: 'JetBrains Mono', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <IconAlertTriangle size={13} color="#aeaeb2" style={{ flexShrink: 0 }} />
+                              <Text size="xs" c="#aeaeb2" style={{ fontFamily: MONO, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {line.raw}
                               </Text>
-                              <Text size="xs" c="dimmed" style={{ flexShrink: 0 }}>— missing ::</Text>
+                              <Text size="xs" c="#636366" style={{ flexShrink: 0 }}>— missing ::</Text>
                             </Group>
                           ) : (
                             <Group gap="xs" wrap="nowrap">
-                              <Text size="xs" fw={700} c="#e8eaf0" style={{ minWidth: 80, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <Text size="xs" fw={700} c="#e8e3d9" style={{ minWidth: 80, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: MONO }}>
                                 {line.word}
                               </Text>
                               {line.note && (
-                                <Text size="xs" c="dimmed" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                <Text size="xs" c="#aeaeb2" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                                   {line.note}
                                 </Text>
                               )}
                               {line.sentence && (
-                                <Text size="xs" c="dimmed" fs="italic" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                <Text size="xs" c="#aeaeb2" fs="italic" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                                   "{line.sentence}"
                                 </Text>
                               )}
@@ -200,9 +208,11 @@ export default function BatchAddPage() {
                 loading={loading}
                 disabled={!parsedLines.length}
                 style={{
-                  background: 'linear-gradient(135deg, #5f3dc4, #7950f2)',
-                  boxShadow: '0 8px 20px rgba(95, 61, 196, 0.3)',
-                  border: 'none', height: 56, color: '#fff', fontWeight: 700,
+                  background: parsedLines.length ? '#c79968' : '#2c2c2e',
+                  border: 'none',
+                  height: 56,
+                  color: parsedLines.length ? '#1c1c1e' : '#636366',
+                  fontWeight: 700,
                 }}
               >
                 Import {validCount > 0 ? `${validCount} Cards` : ''}
