@@ -15,8 +15,9 @@ A self-hosted spaced repetition flashcard app powered by the [FSRS](https://gith
 
 | Layer | Tech |
 |---|---|
-| Frontend | React 19 + TypeScript + Vite, Zustand, Mantine 9 |
+| Frontend | React 19 + TypeScript + Vite, Mantine 9, TanStack Query, React Router |
 | Backend | FastAPI (Python) |
+| FSRS | `py-fsrs` for review scheduling |
 | Database | SQLite |
 | Serving | Nginx |
 | Container | Docker Compose |
@@ -61,12 +62,22 @@ Apple::蘋果::An apple a day keeps the doctor away.
 
 ## API
 
-| Endpoint | Method | Description |
+Nginx maps `/api/*` → backend `/*`.
+
+| Method | Endpoint | Description |
 |---|---|---|
-| `/api/health` | GET | Health check |
-| `/api/cards` | GET | Fetch all cards |
-| `/api/cards/batch` | POST | Batch add cards |
-| `/api/cards/:id` | PATCH | Update a card |
-| `/api/settings` | GET | Fetch settings (runs streak logic) |
-| `/api/settings` | PATCH | Update settings |
-| `/api/sync` | POST | Upsert all cards + settings |
+| GET    | `/api/health` | Health check |
+| GET    | `/api/stats` | `{streak_count, due_count, new_available, ...}` for the dashboard |
+| GET    | `/api/cards/queue` | Today's review queue (due + new, capped) |
+| GET    | `/api/cards/search?q=...` | Search by word for the Edit page |
+| GET    | `/api/cards` | All cards (rare; used by sync) |
+| POST   | `/api/cards/batch` | Batch add cards (BatchAdd page) |
+| PATCH  | `/api/cards/{id}` | Update a card's sentence / note |
+| POST   | `/api/cards/{id}/review` | Submit a rating (1–4) → returns the rescheduled card |
+| GET    | `/api/settings` | Fetch settings (runs streak logic) |
+| PATCH  | `/api/settings` | Update settings |
+| POST   | `/api/sync` | Upsert all cards + settings |
+
+## UI
+
+Follows the [utility repo's design language](../README.md#design-language) — monochrome warm-gray surfaces with one honey accent per page. Review-rating buttons (Again / Hard / Good / Easy) intentionally drop the conventional color coding in favor of position-based muscle memory + keyboard hints `[1] [2] [3] [4]`.

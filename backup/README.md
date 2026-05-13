@@ -1,14 +1,12 @@
 # backup
 
-Daily backup of flashcard and TwelveReader data to Cloudflare R2 at 04:00.
+Daily backup of flashcard data to Cloudflare R2 at 04:00.
 
 Uses `sqlite3 .backup` for a safe hot copy, then `rclone copy` to R2. Snapshots older than 30 days are pruned automatically.
 
 R2 layout:
 ```
 flashcard/YYYY-MM-DD/flashcard.db
-twelvereader/YYYY-MM-DD/twelve.db
-twelvereader/YYYY-MM-DD/books/
 ```
 
 ## R2 API Token
@@ -17,7 +15,8 @@ Use a **User API token** with **Admin Read & Write** permission. "Object Read & 
 
 ## Notes
 
-- Both data directories are mounted read-write because SQLite WAL mode requires creating a `.db-shm` file alongside the database even for read operations. `sqlite3 .backup` does not modify the source database.
+- The flashcard data directory is mounted read-write because SQLite WAL mode requires creating a `.db-shm` file alongside the database even for read operations. `sqlite3 .backup` does not modify the source database.
+- marker-pipeline outputs are downloaded zips, not persistent state — not backed up here. transcribe / keyboard outputs are similarly reproducible from source (YouTube URL re-pull, vocab list re-edit) and intentionally excluded.
 
 ## Deploy
 

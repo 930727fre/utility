@@ -1,4 +1,4 @@
-# utility
+# utilities
 
 A collection of self-hosted tools, each containerized with Docker.
 

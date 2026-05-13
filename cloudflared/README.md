@@ -8,12 +8,15 @@ Runs a Cloudflare Tunnel to expose all services via subdomains on your domain.
 2. Copy the tunnel token
 3. Under the tunnel → **Published application routes**, add one route per service:
    - `clock.domain.com` → `http://clock:80`
-   - `twelvereader.domain.com` → `http://twelvereader-frontend:3000`
+   - `marker.domain.com` → `http://marker-pipeline-frontend:3000`
    - `transcribe.domain.com` → `http://transcribe-frontend:8000`
    - `flashcard.domain.com` → `http://flashcard-frontend:80`
+   - `keyboard.domain.com` → `http://keyboard-backend:8080`
 4. Go to Zero Trust → Access → Applications → Add an application → Self-hosted:
    - Domain: `*.domain.com`
    - Under Policies, add a rule: **Emails → `you@gmail.com`** (one-time PIN sent to your email)
+
+`ollama` is shared infrastructure (no public route) — only accessible from inside `my_network` on `http://ollama:11434`.
 
 ## Usage
 
@@ -22,24 +25,33 @@ Start the tunnel first (it creates `my_network` automatically), then each servic
 **Linux/macOS**
 ```bash
 cd cloudflared && CLOUDFLARE_TUNNEL_TOKEN=<token> docker compose up -d
+cd ../ollama && docker compose up -d
+cd ../marker-pipeline && docker compose up -d
 cd ../transcribe && docker compose up -d
-cd ../TwelveReader && docker compose up -d
+cd ../flashcard && docker compose up -d
+cd ../keyboard && docker compose up -d
 cd ../clock && docker compose up -d
 ```
 
 **Windows CMD**
 ```cmd
 cd cloudflared && set CLOUDFLARE_TUNNEL_TOKEN=<token> && docker compose up -d
+cd ../ollama && docker compose up -d
+cd ../marker-pipeline && docker compose up -d
 cd ../transcribe && docker compose up -d
-cd ../TwelveReader && docker compose up -d
+cd ../flashcard && docker compose up -d
+cd ../keyboard && docker compose up -d
 cd ../clock && docker compose up -d
 ```
 
 **Windows PowerShell**
 ```powershell
 cd cloudflared; $env:CLOUDFLARE_TUNNEL_TOKEN="<token>"; docker compose up -d
+cd ../ollama; docker compose up -d
+cd ../marker-pipeline; docker compose up -d
 cd ../transcribe; docker compose up -d
-cd ../TwelveReader; docker compose up -d
+cd ../flashcard; docker compose up -d
+cd ../keyboard; docker compose up -d
 cd ../clock; docker compose up -d
 ```
 
