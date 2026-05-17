@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import {
   Paper, Title, Text, Button, Group, Stack,
-  ActionIcon, ThemeIcon, SimpleGrid, Box, Transition
+  ActionIcon, SimpleGrid, Box, Transition
 } from '@mantine/core';
 import PageShell from '../components/PageShell';
 import { IconCheck, IconLamp, IconCopy } from '@tabler/icons-react';
@@ -157,29 +157,44 @@ export default function ReviewPage() {
 
   if (phase === 'done') {
     return (
-      <PageShell scroll="centered" size="xs">
-        <Paper radius={20} p={40} withBorder
-          style={{ background: 'var(--card)', borderColor: 'var(--border)', textAlign: 'center' }}>
-          <Stack align="center" gap="xl">
-            <ThemeIcon size={80} radius="xl" variant="filled" style={{ backgroundColor: 'var(--raised)', color: 'var(--text-h)' }}>
-              <IconCheck size={40} />
-            </ThemeIcon>
-            <Box>
-              <Title order={2} c="var(--text-h)">Session Complete</Title>
-              <Text c="var(--text)" mt="sm">All cards have been reviewed.</Text>
+      <PageShell scroll="locked">
+        <Stack gap="lg" style={{ flex: 1, minHeight: 0 }}>
+          <Paper
+            p={0}
+            radius={24}
+            style={{
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
+              boxShadow: 'var(--shadow)',
+            }}
+          >
+            <Stack align="center" gap={0} p={{ base: 'lg', sm: 40 }} style={{ flex: 1, justifyContent: 'center' }}>
+              <Text c="var(--text-dim)" style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase' }}>
+                session complete
+              </Text>
+              <Box my="lg" style={{ width: 40, height: 1, background: 'var(--raised)' }} />
+              <Text c="var(--text)" style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase' }}>
+                all cards reviewed
+              </Text>
+            </Stack>
+            <Box p={{ base: 'lg', sm: 40 }} pt={0}>
+              <Button
+                size="lg"
+                radius="md"
+                fullWidth
+                disabled={!canNavigate}
+                onClick={() => navigate('/')}
+                style={{ background: canNavigate ? 'var(--accent)' : 'var(--raised)', color: canNavigate ? 'var(--bg)' : 'var(--text-dim)', border: 'none', fontWeight: 600, transition: 'background 0.2s, color 0.2s' }}
+              >
+                {canNavigate ? 'Back to Dashboard' : <span className="glyph-pulse">○</span>}
+              </Button>
             </Box>
-            <Button
-              size="lg"
-              radius="md"
-              fullWidth
-              disabled={!canNavigate}
-              onClick={() => navigate('/')}
-              style={{ background: canNavigate ? 'var(--accent)' : 'var(--raised)', color: canNavigate ? 'var(--bg)' : 'var(--text-dim)', border: 'none', fontWeight: 600, transition: 'background 0.2s, color 0.2s' }}
-            >
-              {canNavigate ? 'Back to Dashboard' : <span className="glyph-pulse">○</span>}
-            </Button>
-          </Stack>
-        </Paper>
+          </Paper>
+        </Stack>
       </PageShell>
     );
   }
