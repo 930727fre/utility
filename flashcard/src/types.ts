@@ -18,7 +18,7 @@ export interface Card {
 }
 
 export interface Stats {
-  streak_count: string;
+  streak_count: number;
   due_count: number;
   new_available: number;
 }

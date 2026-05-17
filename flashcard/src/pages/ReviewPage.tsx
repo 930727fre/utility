@@ -11,7 +11,6 @@ import { notifications } from '@mantine/notifications';
 import { api } from '../api';
 import type { Card } from '../types';
 
-const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace';
 
 const RATINGS = [
   { label: 'Again', value: 1 },
@@ -131,22 +130,22 @@ export default function ReviewPage() {
               minHeight: 0,
               display: 'flex',
               flexDirection: 'column',
-              background: '#2c2c2e',
-              border: '1px solid #3a3a3c',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
+              boxShadow: 'var(--shadow)',
               cursor: 'pointer',
               userSelect: 'none',
             }}
           >
             <Stack align="center" gap={0} p={{ base: 'lg', sm: 40 }} style={{ flex: 1, justifyContent: 'center' }}>
-              <Text c="#636366" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase' }}>
+              <Text c="var(--text-dim)" style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase' }}>
                 due · done
               </Text>
-              <Box my="lg" style={{ width: 40, height: 1, background: '#3a3a3c' }} />
-              <Text c="#aeaeb2" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase' }}>
+              <Box my="lg" style={{ width: 40, height: 1, background: 'var(--raised)' }} />
+              <Text c="var(--text)" style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase' }}>
                 new words
               </Text>
-              <Text c="#636366" size="xs" mt={48} style={{ fontFamily: MONO }}>
+              <Text c="var(--text-dim)" size="xs" mt={48} style={{ fontFamily: 'var(--mono)' }}>
                 tap · [space]
               </Text>
             </Stack>
@@ -160,14 +159,14 @@ export default function ReviewPage() {
     return (
       <PageShell scroll="centered" size="xs">
         <Paper radius={20} p={40} withBorder
-          style={{ background: '#2c2c2e', borderColor: '#3a3a3c', textAlign: 'center' }}>
+          style={{ background: 'var(--card)', borderColor: 'var(--border)', textAlign: 'center' }}>
           <Stack align="center" gap="xl">
-            <ThemeIcon size={80} radius="xl" variant="filled" style={{ backgroundColor: '#3a3a3c', color: '#e8e3d9' }}>
+            <ThemeIcon size={80} radius="xl" variant="filled" style={{ backgroundColor: 'var(--raised)', color: 'var(--text-h)' }}>
               <IconCheck size={40} />
             </ThemeIcon>
             <Box>
-              <Title order={2} c="#e8e3d9">Session Complete</Title>
-              <Text c="#aeaeb2" mt="sm">All cards have been reviewed.</Text>
+              <Title order={2} c="var(--text-h)">Session Complete</Title>
+              <Text c="var(--text)" mt="sm">All cards have been reviewed.</Text>
             </Box>
             <Button
               size="lg"
@@ -175,7 +174,7 @@ export default function ReviewPage() {
               fullWidth
               disabled={!canNavigate}
               onClick={() => navigate('/')}
-              style={{ background: canNavigate ? '#c79968' : '#3a3a3c', color: canNavigate ? '#1c1c1e' : '#636366', border: 'none', fontWeight: 600, transition: 'background 0.2s, color 0.2s' }}
+              style={{ background: canNavigate ? 'var(--accent)' : 'var(--raised)', color: canNavigate ? 'var(--bg)' : 'var(--text-dim)', border: 'none', fontWeight: 600, transition: 'background 0.2s, color 0.2s' }}
             >
               {canNavigate ? 'Back to Dashboard' : <span className="glyph-pulse">○</span>}
             </Button>
@@ -210,31 +209,31 @@ export default function ReviewPage() {
                   minHeight: 0,
                   display: 'flex',
                   flexDirection: 'column',
-                  background: '#2c2c2e',
-                  border: '1px solid #3a3a3c',
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                  background: 'var(--card)',
+                  border: '1px solid var(--border)',
+                  boxShadow: 'var(--shadow)',
                   overflowY: 'auto',
                   position: 'relative',
                 }}
               >
                 <Stack align="center" gap={0} p={{ base: 'lg', sm: 40 }} style={{ flex: 1, justifyContent: 'center' }}>
-                  <Title order={1} ta="center" style={{ fontSize: 'clamp(2rem, 8vw, 3.5rem)', color: '#e8e3d9', letterSpacing: '-0.5px', lineHeight: 1.2 }}>
+                  <Title order={1} ta="center" style={{ fontSize: 'clamp(2rem, 8vw, 3.5rem)', color: 'var(--text-h)', letterSpacing: '-0.5px', lineHeight: 1.2 }}>
                     {currentCard?.word}
                   </Title>
 
                   {currentCard?.sentence && (
-                    <Text c="#aeaeb2" ta="center" size="lg" mt="xl" fs="italic" style={{ maxWidth: '90%' }}>
+                    <Text c="var(--text)" ta="center" size="lg" mt="xl" fs="italic" style={{ maxWidth: '90%' }}>
                       "{currentCard.sentence}"
                     </Text>
                   )}
 
                   {isFlipped && (
-                    <Box mt={40} pt={30} style={{ borderTop: '1px solid #3a3a3c', width: '100%' }}>
+                    <Box mt={40} pt={30} style={{ borderTop: '1px solid var(--border)', width: '100%' }}>
                       <Group gap="xs" justify="center" mb="xs" opacity={0.5}>
                         <IconLamp size={14} />
-                        <Text size="xs" fw={800} tt="uppercase" style={{ fontFamily: MONO }}>Definition / Note</Text>
+                        <Text size="xs" fw={800} tt="uppercase" style={{ fontFamily: 'var(--mono)' }}>Definition / Note</Text>
                       </Group>
-                      <Text ta="center" size="xl" fw={600} c="#e8e3d9" style={{ wordBreak: 'break-word' }}>
+                      <Text ta="center" size="xl" fw={600} c="var(--text-h)" style={{ wordBreak: 'break-word' }}>
                         {currentCard?.note || "No notes provided."}
                       </Text>
                       <Group justify="center" mt="lg">
@@ -249,7 +248,7 @@ export default function ReviewPage() {
                             setCopied(true);
                             setTimeout(() => setCopied(false), 2000);
                           }}
-                          style={{ color: '#aeaeb2', border: '1px solid #3a3a3c' }}
+                          style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
                         >
                           {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
                         </ActionIcon>
@@ -281,8 +280,8 @@ export default function ReviewPage() {
                 tabIndex={isFlipped && canRate ? 0 : -1}
                 styles={{
                   root: {
-                    backgroundColor: '#2c2c2e',
-                    border: '1px solid #3a3a3c',
+                    backgroundColor: 'var(--card)',
+                    border: '1px solid var(--border)',
                     height: 70,
                     opacity: canRate ? 1 : 0.3,
                     transition: 'opacity 0.2s',
@@ -290,8 +289,8 @@ export default function ReviewPage() {
                   inner: { flexDirection: 'column', gap: 2 },
                 }}
               >
-                <Text fw={800} size="sm" c="#e8e3d9">{label}</Text>
-                <Text size="xs" c="#aeaeb2" fw={500} style={{ fontFamily: MONO }}>[{i + 1}]</Text>
+                <Text fw={800} size="sm" c="var(--text-h)">{label}</Text>
+                <Text size="xs" c="var(--text)" fw={500} style={{ fontFamily: 'var(--mono)' }}>[{i + 1}]</Text>
               </Button>
             ))}
           </SimpleGrid>

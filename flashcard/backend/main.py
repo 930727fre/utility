@@ -125,7 +125,7 @@ def get_stats():
 
     conn.close()
     return {
-        "streak_count": s.get('streak_count', '0'),
+        "streak_count": int(s.get('streak_count', '0') or '0'),
         "due_count": due_count,
         "new_available": new_available,
     }

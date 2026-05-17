@@ -8,7 +8,6 @@ import { notifications } from '@mantine/notifications';
 import { api } from '../api';
 import type { Card } from '../types';
 
-const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace';
 
 export default function EditPage() {
 
@@ -59,10 +58,10 @@ export default function EditPage() {
     <PageShell size="xs">
       <style>{`
         .candidate-row { cursor: pointer; }
-        .candidate-row:hover { background: #3a3a3c; }
+        .candidate-row:hover { background: var(--raised); }
       `}</style>
       <Stack gap="lg">
-        <Title order={2} c="#e8e3d9" style={{ letterSpacing: '-0.5px' }}>Edit</Title>
+        <Title order={2} c="var(--text-h)" style={{ letterSpacing: '-0.5px' }}>Edit</Title>
 
         {/* Search */}
         <Box style={{ position: 'relative' }}>
@@ -72,9 +71,9 @@ export default function EditPage() {
             onChange={e => handleSearch(e.target.value)}
             styles={{
               input: {
-                backgroundColor: '#2c2c2e',
-                border: '1px solid #3a3a3c',
-                color: '#e8e3d9',
+                backgroundColor: 'var(--card)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-h)',
               },
             }}
           />
@@ -87,8 +86,8 @@ export default function EditPage() {
                 left: 0,
                 right: 0,
                 zIndex: 100,
-                background: '#2c2c2e',
-                border: '1px solid #3a3a3c',
+                background: 'var(--card)',
+                border: '1px solid var(--border)',
                 borderTop: 'none',
                 borderRadius: '0 0 8px 8px',
                 overflow: 'hidden',
@@ -102,13 +101,13 @@ export default function EditPage() {
                     px="md"
                     py="md"
                     onClick={() => handleSelect(card)}
-                    style={{ borderBottom: '1px solid #3a3a3c' }}
+                    style={{ borderBottom: '1px solid var(--border)' }}
                   >
-                    <Text size="sm" c="#e8e3d9" fw={600} style={{ fontFamily: MONO }}>
+                    <Text size="sm" c="var(--text-h)" fw={600} style={{ fontFamily: 'var(--mono)' }}>
                       {card.word}
                     </Text>
                     {card.note && (
-                      <Text size="xs" c="#aeaeb2" truncate>{card.note}</Text>
+                      <Text size="xs" c="var(--text)" truncate>{card.note}</Text>
                     )}
                   </Box>
                 ))}
@@ -120,12 +119,12 @@ export default function EditPage() {
         {/* Edit form */}
         {selected && (
           <Stack gap="md">
-            <Text fw={700} size="xl" c="#e8e3d9" style={{ fontFamily: MONO }}>
+            <Text fw={700} size="xl" c="var(--text-h)" style={{ fontFamily: 'var(--mono)' }}>
               {selected.word}
             </Text>
 
             <Box>
-              <Text size="xs" c="#aeaeb2" mb={4}>Sentence</Text>
+              <Text size="xs" c="var(--text)" mb={4}>Sentence</Text>
               <Textarea
                 autosize
                 minRows={2}
@@ -133,9 +132,9 @@ export default function EditPage() {
                 onChange={e => setSentence(e.target.value)}
                 styles={{
                   input: {
-                    backgroundColor: '#1c1c1e',
-                    border: '1px solid #3a3a3c',
-                    color: '#e8e3d9',
+                    backgroundColor: 'var(--bg)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-h)',
                     fontSize: 14,
                   },
                 }}
@@ -143,7 +142,7 @@ export default function EditPage() {
             </Box>
 
             <Box>
-              <Text size="xs" c="#aeaeb2" mb={4}>Note</Text>
+              <Text size="xs" c="var(--text)" mb={4}>Note</Text>
               <Textarea
                 autosize
                 minRows={2}
@@ -151,9 +150,9 @@ export default function EditPage() {
                 onChange={e => setNote(e.target.value)}
                 styles={{
                   input: {
-                    backgroundColor: '#1c1c1e',
-                    border: '1px solid #3a3a3c',
-                    color: '#e8e3d9',
+                    backgroundColor: 'var(--bg)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-h)',
                     fontSize: 14,
                   },
                 }}
@@ -168,9 +167,9 @@ export default function EditPage() {
               loading={saving}
               onClick={handleUpdate}
               style={{
-                background: isDirty ? '#c79968' : '#2c2c2e',
-                color: isDirty ? '#1c1c1e' : '#636366',
-                border: isDirty ? 'none' : '1px solid #3a3a3c',
+                background: isDirty ? 'var(--accent)' : 'var(--card)',
+                color: isDirty ? 'var(--bg)' : 'var(--text-dim)',
+                border: isDirty ? 'none' : '1px solid var(--border)',
                 fontWeight: 600,
               }}
             >

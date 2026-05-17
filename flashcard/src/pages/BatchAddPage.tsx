@@ -7,7 +7,6 @@ import { nanoid } from 'nanoid';
 import { useNavigate } from 'react-router-dom';
 import type { Card } from '../types';
 
-const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace';
 
 interface ParsedLine {
   raw: string;
@@ -77,7 +76,7 @@ export default function BatchAddPage() {
   return (
     <PageShell maw={520}>
       <Stack gap="lg">
-        <Title order={2} c="#e8e3d9" style={{ letterSpacing: '-0.5px' }}>Batch Import</Title>
+        <Title order={2} c="var(--text-h)" style={{ letterSpacing: '-0.5px' }}>Batch Import</Title>
 
         <Textarea
           placeholder={"Apple::蘋果::An apple a day.\nBanana::香蕉::I like bananas."}
@@ -87,10 +86,10 @@ export default function BatchAddPage() {
           onChange={(e) => setContent(e.target.value)}
           styles={{
             input: {
-              fontFamily: MONO,
-              backgroundColor: '#1c1c1e',
-              color: '#e8e3d9',
-              border: '1px solid #3a3a3c',
+              fontFamily: 'var(--mono)',
+              backgroundColor: 'var(--bg)',
+              color: 'var(--text-h)',
+              border: '1px solid var(--border)',
               padding: '16px',
               fontSize: '14px',
               borderRadius: '12px',
@@ -100,7 +99,7 @@ export default function BatchAddPage() {
 
         {parsedLines.length > 0 && (
           <Box>
-            <Text size="xs" c="#aeaeb2" mb={8} style={{ fontFamily: MONO }}>
+            <Text size="xs" c="var(--text)" mb={8} style={{ fontFamily: 'var(--mono)' }}>
               {validCount} cards{malformedCount > 0 && ` · ${malformedCount} malformed`}
             </Text>
             <Stack gap={2}>
@@ -108,23 +107,23 @@ export default function BatchAddPage() {
                 <Box key={i} px="xs" py={4}>
                   {line.malformed ? (
                     <Group gap="xs" wrap="nowrap">
-                      <Text size="xs" c="#aeaeb2" style={{ fontFamily: MONO, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <Text size="xs" c="var(--text)" style={{ fontFamily: 'var(--mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {line.raw}
                       </Text>
-                      <Text size="xs" c="#636366" style={{ flexShrink: 0 }}>— missing ::</Text>
+                      <Text size="xs" c="var(--text-dim)" style={{ flexShrink: 0 }}>— missing ::</Text>
                     </Group>
                   ) : (
                     <Group gap="md" wrap="nowrap">
-                      <Text size="xs" fw={700} c="#e8e3d9" style={{ minWidth: 80, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: MONO }}>
+                      <Text size="xs" fw={700} c="var(--text-h)" style={{ minWidth: 80, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--mono)' }}>
                         {line.word}
                       </Text>
                       {line.note && (
-                        <Text size="xs" c="#aeaeb2" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                        <Text size="xs" c="var(--text)" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                           {line.note}
                         </Text>
                       )}
                       {line.sentence && (
-                        <Text size="xs" c="#aeaeb2" fs="italic" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                        <Text size="xs" c="var(--text)" fs="italic" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                           "{line.sentence}"
                         </Text>
                       )}
@@ -142,10 +141,10 @@ export default function BatchAddPage() {
           loading={loading}
           disabled={!parsedLines.length}
           style={{
-            background: parsedLines.length ? '#c79968' : '#2c2c2e',
+            background: parsedLines.length ? 'var(--accent)' : 'var(--card)',
             border: 'none',
             height: 56,
-            color: parsedLines.length ? '#1c1c1e' : '#636366',
+            color: parsedLines.length ? 'var(--bg)' : 'var(--text-dim)',
             fontWeight: 700,
           }}
         >

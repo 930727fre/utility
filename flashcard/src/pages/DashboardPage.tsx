@@ -11,18 +11,15 @@ import {
 } from '@tabler/icons-react';
 import PageShell from '../components/PageShell';
 
-const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace';
-
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { data: stats } = useQuery({
+  const { data: stats, isStale, isFetching } = useQuery({
     queryKey: ['stats'],
     queryFn: api.getStats,
     staleTime: 30_000,
   });
 
-
-  if (!stats) {
+  if (!stats || (isStale && isFetching)) {
     return (
       <PageShell scroll="centered" maw={480}>
         <Stack gap="md">
@@ -34,7 +31,7 @@ export default function DashboardPage() {
             <Skeleton height={48} radius={8} animate />
           </Group>
           <Stack gap={4} align="center" mt="md">
-            <Text c="#aeaeb2" size="xs" fw={700} style={{ letterSpacing: '1.5px', fontFamily: MONO }}>
+            <Text c="var(--text)" size="xs" fw={700} style={{ letterSpacing: '1.5px', fontFamily: 'var(--mono)' }}>
               SYNCING WITH BACKEND
             </Text>
             <Progress value={100} w={120} size="xs" radius="xl" animated color="gray" />
@@ -49,10 +46,10 @@ export default function DashboardPage() {
   const isDone = phase === 'done';
 
   const phaseIcon = isDone
-    ? <IconCheck size={52} color="#aeaeb2" style={{ flexShrink: 0 }} />
+    ? <IconCheck size={52} color="var(--text)" style={{ flexShrink: 0 }} />
     : phase === 'review'
-    ? <IconCards size={52} color="#aeaeb2" style={{ flexShrink: 0 }} />
-    : <IconPlus size={52} color="#aeaeb2" style={{ flexShrink: 0 }} />;
+    ? <IconCards size={52} color="var(--text)" style={{ flexShrink: 0 }} />
+    : <IconPlus size={52} color="var(--text)" style={{ flexShrink: 0 }} />;
 
   const phaseTag = isDone ? 'All Clear' : phase === 'review' ? 'Due Today' : 'New Cards';
 
@@ -67,19 +64,19 @@ export default function DashboardPage() {
           {/* Streak */}
           <Paper radius={14} p="xl"
             style={{
-              background: '#2c2c2e',
-              border: '1px solid #3a3a3c',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
+              boxShadow: 'var(--shadow)',
             }}>
             <Group gap="xl" wrap="nowrap">
-              <IconFlame size={52} color="#aeaeb2" style={{ flexShrink: 0 }} />
+              <IconFlame size={52} color="var(--text)" style={{ flexShrink: 0 }} />
               <Box>
-                <Text size="xs" fw={600} c="#aeaeb2" tt="uppercase" style={{ letterSpacing: '1.5px', fontFamily: MONO }}>
+                <Text size="xs" fw={600} c="var(--text)" tt="uppercase" style={{ letterSpacing: '1.5px', fontFamily: 'var(--mono)' }}>
                   Current Streak
                 </Text>
-                <Title order={1} style={{ fontFamily: MONO, fontSize: 38, color: '#e8e3d9', lineHeight: 1.1 }}>
+                <Title order={1} style={{ fontFamily: 'var(--mono)', fontSize: 38, color: 'var(--text-h)', lineHeight: 1.1 }}>
                   {stats.streak_count}{' '}
-                  <Text span size="lg" c="#aeaeb2" fw={400}>Days</Text>
+                  <Text span size="lg" c="var(--text)" fw={400}>Days</Text>
                 </Title>
               </Box>
             </Group>
@@ -88,24 +85,24 @@ export default function DashboardPage() {
           {/* Phase */}
           <Paper radius={14} p="xl"
             style={{
-              background: '#2c2c2e',
-              border: '1px solid #3a3a3c',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
+              boxShadow: 'var(--shadow)',
             }}>
             <Group gap="xl" wrap="nowrap">
               {phaseIcon}
               <Box>
-                <Text size="xs" fw={600} c="#aeaeb2" tt="uppercase" style={{ letterSpacing: '1.5px', fontFamily: MONO }}>
+                <Text size="xs" fw={600} c="var(--text)" tt="uppercase" style={{ letterSpacing: '1.5px', fontFamily: 'var(--mono)' }}>
                   {phaseTag}
                 </Text>
                 {isDone ? (
-                  <Title order={2} style={{ fontFamily: MONO, fontSize: 38, color: '#aeaeb2', lineHeight: 1.1 }}>
+                  <Title order={2} style={{ fontFamily: 'var(--mono)', fontSize: 38, color: 'var(--text)', lineHeight: 1.1 }}>
                     Done
                   </Title>
                 ) : (
-                  <Title order={2} style={{ fontFamily: MONO, fontSize: 38, color: '#e8e3d9', lineHeight: 1.1 }}>
+                  <Title order={2} style={{ fontFamily: 'var(--mono)', fontSize: 38, color: 'var(--text-h)', lineHeight: 1.1 }}>
                     {queueSize}{' '}
-                    <Text span size="lg" c="#aeaeb2" fw={400}>cards</Text>
+                    <Text span size="lg" c="var(--text)" fw={400}>cards</Text>
                   </Title>
                 )}
               </Box>
@@ -122,9 +119,9 @@ export default function DashboardPage() {
               title={ctaLabel}
               aria-label={ctaLabel}
               style={{
-                background: isDone ? '#2c2c2e' : '#c79968',
-                color: isDone ? '#636366' : '#1c1c1e',
-                border: isDone ? '1px solid #3a3a3c' : 'none',
+                background: isDone ? 'var(--card)' : 'var(--accent)',
+                color: isDone ? 'var(--text-dim)' : 'var(--bg)',
+                border: isDone ? '1px solid var(--border)' : 'none',
                 height: 54,
               }}
             >
@@ -137,7 +134,7 @@ export default function DashboardPage() {
               onClick={() => navigate('/batch-add')}
               title="Batch Import"
               aria-label="Batch Import"
-              style={{ borderColor: '#3a3a3c', color: '#e8e3d9', height: 54, background: 'transparent' }}
+              style={{ borderColor: 'var(--border)', color: 'var(--text-h)', height: 54, background: 'transparent' }}
             >
               <IconUpload size={22} />
             </Button>
@@ -148,7 +145,7 @@ export default function DashboardPage() {
               onClick={() => navigate('/edit')}
               title="Edit"
               aria-label="Edit"
-              style={{ borderColor: '#3a3a3c', color: '#e8e3d9', height: 54, background: 'transparent' }}
+              style={{ borderColor: 'var(--border)', color: 'var(--text-h)', height: 54, background: 'transparent' }}
             >
               <IconPencil size={22} />
             </Button>
